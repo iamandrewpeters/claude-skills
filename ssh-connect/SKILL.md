@@ -12,7 +12,8 @@ Use the Bash tool to SSH into servers using the configured aliases.
 
 | Alias | IP | Notes |
 |---|---|---|
-| `build-faithmade` | 178.156.221.8 | Hetzner Ubuntu 24.04, root |
+| `build-faithmade` / `n8n-hetzner` | 178.156.221.8 | Hetzner Ubuntu 24.04, root, n8n stack |
+| `faithmade-app-build` | 178.156.232.23 | Hetzner Ubuntu 24.04, root, mobile app build server |
 
 All other servers in `~/.ssh/config` (key access not confirmed):
 - `ClientSitesAtlanta` — 155.138.237.175
