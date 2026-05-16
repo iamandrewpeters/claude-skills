@@ -1,87 +1,142 @@
 ---
 name: faithmade
-description: Use this skill when working on Faithmade platform code, including faithmade plugins, the child theme, Beaver Builder custom modules, CHMS integration, sermon/event/group/staff content types, or any faithmade-specific WordPress development.
-version: 1.0.0
+description: "Use when working on the Faithmade platform. Encodes platform-specific decisions, plugin boundaries, multisite isolation rules, and the architectural judgment for this specific codebase."
+version: 2.0.0
 ---
 
-# Faithmade Platform Skill
+# Faithmade Platform
 
-## Overview
+## Architecture Overview
 
-Faithmade is a WordPress Multisite platform for a church/faith community. Two repos:
+WordPress Multisite platform for church communities. Two repos:
 
 - **`faithmade-wp/`** — Full WordPress Multisite installation
-- **`faithmade-admin/`** — WordPress Network Admin Plugin (v1.1.1)
+- **`faithmade-admin/`** — Network Admin Plugin (v1.1.1)
 
-## Child Theme
+## Decision Framework
 
-**Path:** `faithmade-wp/wp-content/themes/page-builder-framework-child/`
+### "Where does this go?"
 
-**Build commands:**
-```bash
-gulp            # Build + dev server + BrowserSync
-gulp styles     # Compile SCSS → CSS
-gulp scripts    # Minify JS
-gulp watch      # Watch for changes
-gulp serve      # BrowserSync live reload
+This is the first question for any new feature. The answer is almost never "create a new plugin."
+
+| Feature type | Location | Reasoning |
+|---|---|---|
+| New content type (like sermons, events) | Existing `faithmade-{type}` plugin | One CPT per plugin is the pattern |
+| New Beaver Builder module | `faithmade-modules` plugin | All custom modules live here |
+| Customizer/styling controls | `faithmade-styles` plugin | Kirki-based, SCSS compilation |
+| Theme-level template change | Child theme | `page-builder-framework-child/` |
+| CHMS integration feature | `faithmade-chms` plugin | PSR-4, Nunjucks templates |
+| Network admin functionality | `faithmade-admin` plugin | UIKit admin UI |
+| Shared utility (used by multiple plugins) | Consider: does it need its own plugin, or should it live in the plugin that uses it most? Ask first. |
+
+### Multisite Isolation (Critical)
+
+Every feature must answer: **Will Site B see Site A's data?**
+
+- Posts, post meta, options are per-site by default — usually safe.
+- Custom tables: must include `blog_id` or use `$wpdb->prefix` (site-specific prefix).
+- Network-activated plugins serve all sites — any stored data must be site-aware.
+- Transients: site-specific by default. Use `get_site_transient()` only for network-wide data.
+
+### Data Storage Decisions
+
+| Data | Current pattern | Notes |
+|---|---|---|
+| Sermon metadata | Post meta on `sermon` CPT | Speaker, date, series, media URLs |
+| Event metadata | Post meta on `event` CPT | Date, location, registration |
+| Plugin settings | Options API | Per-site settings via Customizer/Kirki |
+| CHMS sync data | Transients (cached API responses) | Short TTL, refreshed on cron |
+| Theme customizations | Theme mods (Customizer) | Via Kirki framework |
+
+---
+
+## Codebase Patterns (Match These)
+
+### Plugin structure (existing pattern)
+
+```
+faithmade-{name}/
+  faithmade-{name}.php    # Bootstrap: header, constants, requires
+  includes/               # Classes and logic
+  assets/                 # JS/CSS if needed
 ```
 
-Requires Ruby Sass. Build config: `assets/manifest.json`.
+### Beaver Builder module (existing pattern)
 
-**Custom features:**
-- Twig shortcode support
-- Custom fonts: Dharma Gothic, Gotham
-- Announcement bar hooks
+```
+faithmade-modules/modules/{module-name}/
+  {module-name}.php       # FLBuilderModule class + register_module
+  includes/
+    frontend.php          # Template (uses $module->settings)
+    frontend.css.php      # Dynamic CSS
+  css/frontend.css        # Static CSS
+  js/frontend.js          # Static JS
+```
 
-## Custom Plugins (9 total)
+### Module registration
 
-All in `wp-content/plugins/faithmade-*/`
+```php
+class MyModule extends FLBuilderModule {
+    public function __construct() {
+        parent::__construct([
+            'name'     => __( 'My Module', 'faithmade' ),
+            'category' => __( 'Faithmade', 'faithmade' ),
+            'dir'      => FM_MODULES_DIR . 'modules/my-module/',
+            'url'      => FM_MODULES_URL . 'modules/my-module/',
+        ]);
+    }
+}
 
-| Plugin | Purpose |
-|---|---|
-| `faithmade-modules` | 15+ custom Beaver Builder modules |
-| `faithmade-chms` | Church Management System integration (PSR-4, Nunjucks) |
-| `faithmade-styles` | Customizer controls via Kirki + SCSS compilation |
-| `faithmade-sermons` | Sermon custom post type & management |
-| `faithmade-events` | Events custom post type & management |
-| `faithmade-groups` | Groups custom post type & management |
-| `faithmade-staff` | Staff custom post type & management |
-| `faithmade-hub` | Hub functionality |
-| `faithmade-resources` | Resources management |
+FLBuilder::register_module( 'MyModule', [ /* fields */ ] );
+```
 
-## faithmade-modules (Beaver Builder Modules)
+### Child theme
 
-Key modules include:
-- Sermon grids
-- Event grids
-- Group grids
-- Card sliders
-- Menus
+- **Build**: Gulp (Ruby Sass, BrowserSync)
+- **Styles**: SCSS in `assets/styles/`, compiled to CSS
+- **Scripts**: JS in `assets/scripts/`, minified by Gulp
+- **Config**: `assets/manifest.json`
+- **Templating**: Twig via Toolbox plugin shortcodes
 
-Each module lives in its own directory under `faithmade-modules/modules/`.
+---
 
-## faithmade-admin Plugin
+## Anti-Patterns for This Codebase
 
-Single-file plugin (`faithmade-admin-area.php`) loading UIKit for admin UI.
+| Don't | Why | Do instead |
+|---|---|---|
+| Create a new plugin for a small feature | Proliferates plugins, complicates deployment | Add to the relevant existing plugin |
+| Put business logic in BB module frontend.php | Templates should only render, not query/process | Process in the module class, pass via settings |
+| Hardcode site URLs or paths | Multisite — paths differ per site | Use `home_url()`, `plugin_dir_path()`, etc. |
+| Add Composer dependencies to individual plugins | No autoloader consistency across the platform | Use WP-native solutions or add to the theme's build |
+| Modify Toolbox/Twig core | It's a third-party plugin | Use hooks and custom shortcodes |
+| Skip `esc_html()` / `esc_attr()` in BB templates | These render user content — XSS risk | Escape everything in frontend.php |
 
-Feature modules in `includes/`:
-- `fm-admin-chat.php` — Admin chat
-- `ultimo-twig-addition.php` — Twig integration
-- Analytics, shortcodes, login redirect, WP Ultimo injection, custom meta box visibility
+---
 
-## Templating
+## Deployment (GridPane)
 
-**Twig** (via Toolbox plugin) used throughout — integrated via shortcodes.
-**Nunjucks** — used in `faithmade-chms` plugin.
+- Git-based via GridPane hooks in `.gpconfig/`
+- `predeploy.sh` / `postdeploy.sh` — per-site hooks
+- `predeploy-server.sh` / `postdeploy-server.sh` — server-level hooks
+- **Never committed**: `wp-config.php`, `wp-content/uploads/`, `docker-compose.yml`
 
-## Deployment
+### Deploy changes are high-risk
 
-Via **GridPane**. Hooks in `faithmade-wp/.gpconfig/`:
-- `predeploy.sh` / `postdeploy.sh`
-- `predeploy-server.sh` / `postdeploy-server.sh`
+Any modification to `.gpconfig/` scripts or deployment pipeline:
+1. Explain what will change and what could break
+2. Test on staging first
+3. Keep changes small and reversible
 
-Gitignored: `wp-config.php`, `wp-content/uploads/`, `docker-compose.yml`
+---
 
-## Third-Party Dependencies
+## Third-Party Stack
 
-Beaver Builder, Kirki Framework, Meta Box AIO, FluentForm, WP All Import Pro, Redis Cache, Toolbox (Twig)
+| Tool | Role | Skill reference |
+|---|---|---|
+| Beaver Builder | Page builder | `beaver-builder` skill |
+| Kirki Framework | Customizer controls | Part of `faithmade-styles` |
+| Meta Box AIO | Custom fields | Field registration in plugins |
+| FluentForm | Forms | Shortcode-based |
+| WP All Import Pro | Data import | One-off imports |
+| Redis | Object cache | Managed via GridPane |
+| Toolbox | Twig templating | Shortcode integration |
