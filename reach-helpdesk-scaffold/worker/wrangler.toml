@@ -1,0 +1,24 @@
+name = "reach-helpdesk"
+main = "src/index.js"
+compatibility_date = "2026-08-01"
+
+# Bundle kb/*.md as text modules (imported in src/kb.js)
+[[rules]]
+type = "Text"
+globs = ["**/*.md"]
+fallthrough = true
+
+# npx wrangler d1 create reach-helpdesk → paste database_id below,
+# then: npx wrangler d1 execute reach-helpdesk --file=schema.sql --remote
+[[d1_databases]]
+binding = "DB"
+database_name = "reach-helpdesk"
+database_id = "REPLACE_WITH_D1_DATABASE_ID"
+
+[vars]
+CLAUDE_MODEL = "claude-opus-5"
+
+# Secrets (npx wrangler secret put <NAME>):
+#   ANTHROPIC_API_KEY      — Claude API key
+#   WIDGET_SIGNING_SECRET  — shared with faithmade-admin (openssl rand -hex 32)
+#   GHL_WEBHOOK_URL        — HighLevel inbound-webhook trigger URL (docs/GHL-SETUP.md)

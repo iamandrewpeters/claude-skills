@@ -1,0 +1,139 @@
+#rhd-root {
+  --rhd-accent: #2271b1; /* wp-admin blue; themeable later */
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 99999;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+#rhd-root .rhd-launcher {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  border: none;
+  background: var(--rhd-accent);
+  color: #fff;
+  font-size: 24px;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+}
+
+#rhd-root .rhd-panel {
+  position: absolute;
+  right: 0;
+  bottom: 64px;
+  width: 340px;
+  height: 460px;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+}
+
+#rhd-root .rhd-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: var(--rhd-accent);
+  color: #fff;
+  font-weight: 600;
+}
+#rhd-root .rhd-close {
+  background: none;
+  border: none;
+  color: #fff;
+  font-size: 20px;
+  cursor: pointer;
+  line-height: 1;
+}
+
+#rhd-root .rhd-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: #f6f7f7;
+}
+#rhd-root .rhd-msg {
+  max-width: 85%;
+  padding: 8px 11px;
+  border-radius: 10px;
+  font-size: 13px;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+#rhd-root .rhd-msg-user {
+  align-self: flex-end;
+  background: var(--rhd-accent);
+  color: #fff;
+  border-bottom-right-radius: 3px;
+}
+#rhd-root .rhd-msg-assistant {
+  align-self: flex-start;
+  background: #fff;
+  border: 1px solid #dcdcde;
+  border-bottom-left-radius: 3px;
+}
+#rhd-root .rhd-pending {
+  opacity: 0.6;
+}
+
+#rhd-root .rhd-escalate {
+  padding: 10px 12px;
+  border-top: 1px solid #dcdcde;
+  background: #fcf9e8;
+  font-size: 13px;
+}
+#rhd-root .rhd-escalate p {
+  margin: 0 0 6px;
+}
+#rhd-root .rhd-escalate-btn {
+  border: none;
+  background: var(--rhd-accent);
+  color: #fff;
+  padding: 6px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+#rhd-root .rhd-form {
+  display: flex;
+  border-top: 1px solid #dcdcde;
+}
+#rhd-root .rhd-input {
+  flex: 1;
+  border: none;
+  padding: 11px 12px;
+  font-size: 13px;
+  outline: none;
+}
+#rhd-root .rhd-send {
+  border: none;
+  background: none;
+  color: var(--rhd-accent);
+  font-weight: 600;
+  padding: 0 14px;
+  cursor: pointer;
+}
+
+#rhd-root .rhd-footer {
+  text-align: center;
+  padding: 6px;
+  background: #fff;
+}
+#rhd-root .rhd-human-link {
+  background: none;
+  border: none;
+  color: #757575;
+  font-size: 11px;
+  cursor: pointer;
+  text-decoration: underline;
+}
