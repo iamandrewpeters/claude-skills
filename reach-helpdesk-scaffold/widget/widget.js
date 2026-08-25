@@ -26,8 +26,10 @@
     '  <div class="rhd-header"><span>Faithmade Support</span><button type="button" class="rhd-close" aria-label="Close">&times;</button></div>' +
     '  <div class="rhd-messages"></div>' +
     '  <div class="rhd-escalate" hidden>' +
-    '    <p>Want a real person on this?</p>' +
-    '    <button type="button" class="rhd-escalate-btn">Yes — contact the team</button>' +
+    '    <p class="rhd-esc-title">Get a real person on this</p>' +
+    '    <textarea class="rhd-esc-msg" rows="2" maxlength="1000" placeholder="Anything else we should know? (optional)"></textarea>' +
+    '    <input class="rhd-esc-phone" type="tel" maxlength="30" placeholder="Mobile number for a text back (optional)">' +
+    '    <button type="button" class="rhd-escalate-btn">Send to the team</button>' +
     '  </div>' +
     '  <form class="rhd-form">' +
     '    <input class="rhd-input" type="text" placeholder="Ask a question…" autocomplete="off" maxlength="4000">' +
@@ -85,7 +87,7 @@
       .then(function (data) {
         pending.classList.remove('rhd-pending');
         pending.textContent = data.reply;
-        if (data.escalate_suggested) escalateCard.hidden = false;
+        if (data.escalate_suggested) showEscalateForm('Bot suggested escalation');
       })
       .catch(function () {
         pending.classList.remove('rhd-pending');
@@ -93,12 +95,27 @@
       });
   }
 
-  function escalate(reason) {
+  function showEscalateForm(reason) {
+    escalateCard.hidden = false;
+    escalateCard.dataset.reason = reason;
+    escalateCard.querySelector('.rhd-esc-msg').focus();
+  }
+
+  function escalate() {
+    var note = escalateCard.querySelector('.rhd-esc-msg').value.trim();
+    var phone = escalateCard.querySelector('.rhd-esc-phone').value.trim();
     escalateCard.hidden = true;
     var pending = addMessage('assistant', 'Contacting the team…');
-    post('/escalate', { reason: reason })
+    post('/escalate', {
+      reason: escalateCard.dataset.reason || 'User requested a human',
+      user_message: note,
+      phone: phone,
+    })
       .then(function () {
-        pending.textContent = "Done — the team has your conversation and Andrew's been notified. You'll hear back by email shortly.";
+        pending.textContent =
+          "Done — the team has your full conversation and has been notified. You'll hear back by " +
+          (phone ? 'text or email' : 'email') +
+          ' shortly.';
       })
       .catch(function () {
         pending.textContent = 'Could not reach the team automatically — please email support@faithmade.app.';
@@ -124,9 +141,9 @@
     send(text);
   });
   root.querySelector('.rhd-escalate-btn').addEventListener('click', function () {
-    escalate('Bot suggested escalation');
+    escalate();
   });
   root.querySelector('.rhd-human-link').addEventListener('click', function () {
-    escalate('User requested a human');
+    showEscalateForm('User requested a human');
   });
 })();

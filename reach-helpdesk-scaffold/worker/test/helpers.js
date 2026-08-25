@@ -30,9 +30,7 @@ export class FakeDB {
   }
   prepare(sql) {
     const db = this;
-    return {
-      bind(...args) {
-        return {
+    const stmt = (args) => ({
           async run() {
             if (sql.includes('INSERT INTO conversations')) db.conversations.set(args[0], args);
             else if (sql.includes('INSERT INTO messages'))
@@ -42,15 +40,39 @@ export class FakeDB {
             return { success: true };
           },
           async all() {
-            // history query: newest-first (DESC LIMIT n); caller reverses
+            const convRow = (id) => {
+              const c = db.conversations.get(id);
+              if (!c) return null;
+              const msgs = db.messages.filter((m) => m.conversation_id === id);
+              return {
+                id: c[0], site: c[1], church: c[2], user_name: c[3], user_email: c[4],
+                status: 'open', created_at: 't0', msg_count: msgs.length, last_at: 't1',
+              };
+            };
+            if (sql.includes('LEFT JOIN')) {
+              return { results: [...db.conversations.keys()].map(convRow) };
+            }
+            if (sql.includes('FROM conversations WHERE id')) {
+              const row = convRow(args[0]);
+              return { results: row ? [row] : [] };
+            }
+            if (sql.includes('FROM escalations')) {
+              return {
+                results: db.escalations
+                  .filter((e) => e.conversation_id === args[0])
+                  .map((e) => ({ ...e, created_at: 't2' })),
+              };
+            }
             const rows = db.messages
               .filter((m) => m.conversation_id === args[0])
-              .map((m) => ({ role: m.role, content: m.content }));
-            return { results: rows.slice(-args[1]).reverse() };
+              .map((m) => ({ role: m.role, content: m.content, created_at: 't1' }));
+            // history query is newest-first (DESC LIMIT n, caller reverses); transcript is chronological
+            if (sql.includes('DESC')) return { results: rows.slice(-args[1]).reverse() };
+            return { results: rows };
           },
-        };
-      },
-    };
+    });
+    // Mirror D1: statements are usable with or without .bind()
+    return { bind: (...args) => stmt(args), ...stmt([]) };
   }
 }
 
@@ -59,6 +81,7 @@ export function testEnv(overrides = {}) {
     DB: new FakeDB(),
     WIDGET_SIGNING_SECRET: 'test-secret',
     GHL_WEBHOOK_URL: 'https://ghl.example/hooks/abc',
+    ADMIN_KEY: 'test-admin',
     MOCK_CLAUDE: '1',
     CLAUDE_MODEL: 'claude-opus-5',
     ...overrides,

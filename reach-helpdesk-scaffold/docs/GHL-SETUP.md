@@ -50,9 +50,13 @@ So email tickets land in the same inbox as escalations:
 
 When this works, Help Scout has no remaining job.
 
-## 3. WordPress integration (reference for faithmade-admin)
+## 3. WordPress integration (implemented in faithmade-admin)
 
-The widget needs a signed context printed by PHP for logged-in admin users. Reference implementation to fold into `faithmade-admin` (target PHP 8.3+):
+Lives at `faithmade-admin/includes/helpdesk-widget.php` (+ widget assets copied to `faithmade-admin/helpdesk/`). It signs the context server-side and enqueues the widget for logged-in wp-admin users.
+
+Secret distribution uses the platform's existing broker: add the key **`helpdesk_widget_secret`** (same value as the Worker's `WIDGET_SIGNING_SECRET`) to auth.faithmade.app — every tenant picks it up via `FM_Secrets_Client`, no per-site config. The widget silently disables itself on sites where the secret doesn't resolve. Overrides: `FM_HELPDESK_SECRET` / `FM_HELPDESK_ENDPOINT` constants (local dev), `fm_helpdesk_endpoint` filter.
+
+Historical reference snippet (superseded by the real module):
 
 ```php
 add_action( 'admin_enqueue_scripts', function () {

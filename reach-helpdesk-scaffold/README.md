@@ -23,7 +23,7 @@ wp-admin (tenant site)                Cloudflare                     HighLevel
 
 | Path | What |
 |---|---|
-| `worker/` | Cloudflare Worker — chat API (Claude), escalation bridge (GHL), D1 conversation log |
+| `worker/` | Cloudflare Worker — chat API (Claude), escalation bridge (GHL), D1 conversation log, `/admin` ticket-tracking views (`?key=ADMIN_KEY`) |
 | `widget/` | Embeddable vanilla-JS chat widget for wp-admin (later folded into `faithmade-admin`) |
 | `kb/` | Markdown knowledge base the bot answers from (Help Scout Docs migrate here) |
 | `docs/ARCHITECTURE.md` | Full design + decision record (why hybrid, not pure GHL / full custom) |

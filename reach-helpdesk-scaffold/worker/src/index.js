@@ -2,6 +2,7 @@ import { verifyContext } from './auth.js';
 import { relevantDocs, kbBlock } from './kb.js';
 import { askClaude } from './claude.js';
 import { escalateToGhl } from './ghl.js';
+import { handleAdmin } from './admin.js';
 
 const HISTORY_LIMIT = 20;
 const MESSAGE_MAX_CHARS = 4000;
@@ -73,6 +74,8 @@ async function handleEscalate(env, request, body) {
   if (!conversationId) {
     return json(request, 400, { error: 'conversation_id is required' });
   }
+  const userMessage = String(body.user_message || '').slice(0, 1000).trim();
+  const phone = String(body.phone || '').slice(0, 30).trim();
 
   await ensureConversation(env, conversationId, context);
   const history = await loadHistory(env, conversationId);
@@ -84,13 +87,16 @@ async function handleEscalate(env, request, body) {
     context,
     conversationId,
     reason: reason || 'User requested a human',
+    userMessage,
+    phone,
     transcript: transcript || '(no prior messages)',
   });
 
+  const dbReason = (reason || 'User requested a human') + (userMessage ? ` — client note: ${userMessage}` : '');
   await env.DB.prepare(
     'INSERT INTO escalations (conversation_id, reason, ghl_status) VALUES (?1, ?2, ?3)'
   )
-    .bind(conversationId, reason || 'User requested a human', status)
+    .bind(conversationId, dbReason, status)
     .run();
   await env.DB.prepare(
     "UPDATE conversations SET status = 'escalated', updated_at = datetime('now') WHERE id = ?1"
@@ -111,6 +117,9 @@ export default {
     }
     if (url.pathname === '/health') {
       return json(request, 200, { ok: true });
+    }
+    if (url.pathname === '/admin' || url.pathname.startsWith('/admin/')) {
+      return handleAdmin(env, request, url);
     }
     if (request.method !== 'POST' || !['/chat', '/escalate'].includes(url.pathname)) {
       return json(request, 404, { error: 'not found' });

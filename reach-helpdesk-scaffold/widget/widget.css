@@ -93,6 +93,20 @@
 }
 #rhd-root .rhd-escalate p {
   margin: 0 0 6px;
+  font-weight: 600;
+}
+#rhd-root .rhd-esc-msg,
+#rhd-root .rhd-esc-phone {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  margin: 0 0 6px;
+  padding: 6px 8px;
+  border: 1px solid #dcdcde;
+  border-radius: 6px;
+  font-size: 13px;
+  font-family: inherit;
+  resize: none;
 }
 #rhd-root .rhd-escalate-btn {
   border: none;

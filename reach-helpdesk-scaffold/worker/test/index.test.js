@@ -67,7 +67,11 @@ test('/escalate posts transcript to GHL and records it', async () => {
   };
   try {
     const res = await worker.fetch(
-      postJson('/escalate', chatBody(env, undefined, { reason: 'User requested a human' })),
+      postJson('/escalate', chatBody(env, undefined, {
+        reason: 'User requested a human',
+        user_message: 'The sermon player is blank on our homepage',
+        phone: '555-0100',
+      })),
       env
     );
     assert.equal(res.status, 200);
@@ -80,9 +84,38 @@ test('/escalate posts transcript to GHL and records it', async () => {
   assert.equal(captured[0].url, env.GHL_WEBHOOK_URL);
   assert.equal(captured[0].body.email, 'jane@gracechurch.org');
   assert.equal(captured[0].body.church, 'Grace Church');
+  assert.equal(captured[0].body.phone, '555-0100');
+  assert.equal(captured[0].body.client_note, 'The sermon player is blank on our homepage');
   assert.match(captured[0].body.transcript, /USER: How do I add a sermon\?/);
   assert.equal(env.DB.escalations.length, 1);
   assert.equal(env.DB.escalations[0].ghl_status, 200);
+  assert.match(env.DB.escalations[0].reason, /client note: The sermon player/);
+});
+
+test('/admin requires the key', async () => {
+  const env = testEnv();
+  const res = await worker.fetch(new Request('https://helpdesk.test/admin?key=wrong'), env);
+  assert.equal(res.status, 401);
+});
+
+test('/admin lists conversations and /admin/conversation shows the transcript', async () => {
+  const env = testEnv();
+  await worker.fetch(postJson('/chat', chatBody(env, 'How do I add a sermon?')), env);
+
+  const list = await worker.fetch(new Request('https://helpdesk.test/admin?key=test-admin'), env);
+  assert.equal(list.status, 200);
+  const listHtml = await list.text();
+  assert.match(listHtml, /Grace Church/);
+  assert.match(listHtml, /jane@gracechurch\.org/);
+
+  const detail = await worker.fetch(
+    new Request('https://helpdesk.test/admin/conversation?id=conv-test-1&key=test-admin'),
+    env
+  );
+  assert.equal(detail.status, 200);
+  const detailHtml = await detail.text();
+  assert.match(detailHtml, /How do I add a sermon\?/);
+  assert.match(detailHtml, /mock reply/);
 });
 
 test('/escalate reports GHL failure as 502', async () => {
