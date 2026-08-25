@@ -120,8 +120,9 @@
 
   function setPresence(online) {
     teamOnline = online;
+    root.classList.toggle('rhd-team-online', online);
     presenceDot.className = 'rhd-presence' + (online ? ' rhd-presence-on' : '');
-    subtitleText.textContent = online ? 'Faithmade AI · team is online' : 'Faithmade AI';
+    subtitleText.textContent = online ? 'Faithmade AI · team is online' : 'Faithmade AI · replies instantly';
   }
 
   function greet() {
