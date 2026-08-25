@@ -2,12 +2,14 @@ import Anthropic from '@anthropic-ai/sdk';
 
 export const ESCALATE_MARKER = '[[ESCALATE]]';
 
-const PERSONA = `You are the support assistant for Faithmade (church websites built on WordPress + Beaver Builder by The Reach Company). You are chatting with a church staff member inside their site's wp-admin.
+const PERSONA = `You are Leo, the Faithmade AI — the same friendly guide who helps churches build their sites. You're now helping a church staff member with a support question inside their site's wp-admin. Faithmade sites run on WordPress with Beaver Builder, built by The Reach Company.
+
+Voice: warm, plainspoken, encouraging — you talk to church staff, not developers. Short sentences. No jargon unless they use it first.
 
 Ground rules:
-- Answer only from the knowledge-base articles provided and general WordPress/Beaver Builder knowledge. Never invent account-specific facts (billing amounts, plan details, credentials, custom work) — those need a human.
-- Keep replies short and stepwise; the user is mid-task in wp-admin.
-- If the question is about something broken, data loss, billing, or anything you cannot resolve from the articles, or the user asks for a person, say you'll connect them with the team and end your reply with the literal marker ${ESCALATE_MARKER}
+- Answer only from the knowledge-base articles provided and general WordPress/Beaver Builder knowledge. Never invent account-specific facts (billing, plan details, credentials, custom work) — those need the team.
+- Keep replies short and stepwise; the person is mid-task.
+- If something is broken, involves data loss or billing, isn't covered by the articles, or they ask for a person, say you'll bring in the team and end your reply with the literal marker ${ESCALATE_MARKER}
 - Never output the marker for questions you did answer.`;
 
 function contextBlock(context) {
@@ -17,18 +19,35 @@ function contextBlock(context) {
 - User: ${context.user_name || 'unknown'} <${context.user_email}>`;
 }
 
+// Maps db roles onto the API's strict user/assistant alternation: agent (human)
+// turns count as assistant, consecutive same-role messages merge, and the
+// thread must open with a user turn.
+function foldForApi(history) {
+  const folded = [];
+  for (const m of history) {
+    const role = m.role === 'user' ? 'user' : 'assistant';
+    const last = folded[folded.length - 1];
+    if (last && last.role === role) last.content += '\n' + m.content;
+    else folded.push({ role, content: m.content });
+  }
+  while (folded.length && folded[0].role !== 'user') folded.shift();
+  return folded;
+}
+
 /**
- * history: [{role: 'user'|'assistant', content: string}, ...] ending with the new user message.
+ * history: [{role: 'user'|'assistant'|'agent', content}] ending with the new user message.
  * Returns { reply, escalate } — reply has the marker stripped.
  */
-export async function askClaude(env, context, history, kb) {
+export async function askLeo(env, context, history, kb) {
   // Dev-only escape hatch: lets `wrangler dev` and tests exercise the full
   // request path without an Anthropic API key. Never set in production.
   if (env.MOCK_CLAUDE === '1') {
     const last = String(history[history.length - 1]?.content || '');
     const escalate = /human|person|broken|billing/i.test(last);
     return {
-      reply: `[mock reply for "${last.slice(0, 60)}"] KB context loaded: ${kb.length} chars.`,
+      reply: escalate
+        ? `That one needs a real person — let me bring in the team.`
+        : `[Leo mock reply for "${last.slice(0, 60)}"] KB context loaded: ${kb.length} chars.`,
       escalate,
     };
   }
@@ -50,14 +69,11 @@ export async function askClaude(env, context, history, kb) {
       },
       { type: 'text', text: contextBlock(context) },
     ],
-    messages: history.map((m) => ({ role: m.role, content: m.content })),
+    messages: foldForApi(history),
   });
 
   if (response.stop_reason === 'refusal') {
-    return {
-      reply: "I can't help with that one directly — let me connect you with the team.",
-      escalate: true,
-    };
+    return { reply: "That one's outside what I can help with — let me bring in the team.", escalate: true };
   }
 
   const text = response.content
@@ -68,5 +84,7 @@ export async function askClaude(env, context, history, kb) {
 
   const escalate = text.includes(ESCALATE_MARKER);
   const reply = text.replaceAll(ESCALATE_MARKER, '').trim();
-  return { reply: reply || 'Sorry — I came up empty on that. Want me to loop in the team?', escalate };
+  return { reply: reply || 'I came up empty on that one — want me to bring in the team?', escalate };
 }
+
+export { askLeo as askClaude }; // back-compat alias
