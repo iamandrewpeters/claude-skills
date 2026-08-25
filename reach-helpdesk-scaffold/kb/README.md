@@ -24,5 +24,4 @@ The first `# heading` is the title; a `tags:` line improves retrieval. Keep file
 1. Help Scout → Manage → Docs → export each collection (or copy/paste — the volume is small).
 2. One article = one `.md` file, named after the question it answers.
 3. Strip Help Scout boilerplate; keep the steps.
-4. Register new files in `worker/src/kb.js` (`KB_FILES`) until a glob build step exists.
-5. Deploy the Worker — the bot picks them up immediately.
+4. Deploy the Worker (`npm run deploy`) — every `.md` here is picked up automatically by the build step (`tools/build-kb.js`); no registration needed.

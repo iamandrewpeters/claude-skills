@@ -32,8 +32,9 @@ wp-admin (tenant site)                Cloudflare                     HighLevel
 ## Status
 
 - [x] Architecture decided (hybrid: custom Claude bot + GHL inbox — see `docs/ARCHITECTURE.md`)
-- [x] Worker scaffold: `/chat`, `/escalate`, `/health`, HMAC auth, D1 schema
-- [x] Widget scaffold (vanilla JS, no framework)
+- [x] Worker: `/chat`, `/escalate`, `/health`, HMAC auth, D1 schema — **runs locally, 19 tests passing** (`npm test`)
+- [x] Widget: vanilla JS, verified in Chromium against the local Worker (see `demo/`)
+- [x] KB build step (`tools/build-kb.js`) — every `kb/**/*.md` auto-bundled; 5 seed articles
 - [ ] Deploy Worker (`wrangler deploy`) + create D1 DB + set secrets
 - [ ] Build GHL workflow (`docs/GHL-SETUP.md`) and set `GHL_WEBHOOK_URL`
 - [ ] Import Help Scout Docs into `kb/`
@@ -56,10 +57,20 @@ npx wrangler secret put WIDGET_SIGNING_SECRET   # openssl rand -hex 32
 npx wrangler secret put GHL_WEBHOOK_URL         # from docs/GHL-SETUP.md
 
 # 3. Ship it
-npx wrangler deploy
-
-# Local dev (uses .dev.vars — copy .dev.vars.example)
-npx wrangler dev
+npm run deploy
 ```
+
+## Local development (no Cloudflare account or API key needed)
+
+```bash
+cd worker
+npm install
+npm test                    # 19 tests: auth HMAC, KB retrieval, full request path
+npm run db:schema:local     # local D1
+cp .dev.vars.example .dev.vars   # set MOCK_CLAUDE=1 for keyless dev
+npm run dev                 # workerd on :8787
+```
+
+`MOCK_CLAUDE=1` makes `/chat` return canned replies so the whole loop (widget → Worker → D1 → escalation webhook) runs without an Anthropic key — never set it in production. `demo/index.html` (serve the repo root, e.g. `python3 -m http.server 8899`) is a fake wp-admin page that exercises the widget against the local Worker.
 
 The bot defaults to `claude-opus-5` and ships with Anthropic's server-side refusal fallback enabled. Override the model with the `CLAUDE_MODEL` var in `wrangler.toml` (e.g. `claude-sonnet-5` to trade some quality for cost — support Q&A is a workload where Sonnet holds up well).

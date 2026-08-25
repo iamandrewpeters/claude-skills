@@ -1,0 +1,52 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>reach-helpdesk — local demo (dev only)</title>
+<style>
+  /* Rough wp-admin stand-in so the widget is seen in context */
+  body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f0f0f1; }
+  .adminbar { background: #1d2327; color: #c3c4c7; padding: 8px 16px; font-size: 13px; }
+  .layout { display: flex; min-height: calc(100vh - 33px); }
+  .sidebar { width: 160px; background: #1d2327; color: #c3c4c7; padding-top: 12px; font-size: 14px; }
+  .sidebar div { padding: 8px 16px; }
+  .sidebar .active { background: #2271b1; color: #fff; }
+  .content { flex: 1; padding: 24px; }
+  .content h1 { font-size: 23px; font-weight: 400; color: #1d2327; }
+  .card { background: #fff; border: 1px solid #c3c4c7; padding: 16px; max-width: 640px; margin-top: 16px; }
+</style>
+<link rel="stylesheet" href="../widget/widget.css">
+</head>
+<body>
+<div class="adminbar">Grace Church — WordPress (demo shell for the helpdesk widget)</div>
+<div class="layout">
+  <div class="sidebar">
+    <div>Dashboard</div><div class="active">Sermons</div><div>Groups</div><div>Events</div><div>Pages</div><div>Appearance</div>
+  </div>
+  <div class="content">
+    <h1>Sermons</h1>
+    <div class="card">This page stands in for wp-admin. The support widget floats bottom-right — in production, faithmade-admin prints the signed context server-side; this demo signs with the local dev secret in the browser (never do this in production).</div>
+  </div>
+</div>
+<script>
+(async function () {
+  // DEV DEMO ONLY — signing in the browser with the known local dev secret.
+  const enc = new TextEncoder();
+  const ctx = {
+    site: 'https://gracechurch.org',
+    church: 'Grace Church',
+    user_name: 'Jane Smith',
+    user_email: 'jane@gracechurch.org',
+    ts: Math.floor(Date.now() / 1000),
+  };
+  const key = await crypto.subtle.importKey('raw', enc.encode('dev-secret'), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+  const sig = await crypto.subtle.sign('HMAC', key, enc.encode(`${ctx.site}|${ctx.user_email}|${ctx.ts}`));
+  ctx.sig = [...new Uint8Array(sig)].map((b) => b.toString(16).padStart(2, '0')).join('');
+  window.ReachHelpdesk = { endpoint: 'http://127.0.0.1:8787', context: ctx };
+  const s = document.createElement('script');
+  s.src = '../widget/widget.js';
+  document.body.appendChild(s);
+})();
+</script>
+</body>
+</html>

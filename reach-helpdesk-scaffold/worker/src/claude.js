@@ -22,6 +22,17 @@ function contextBlock(context) {
  * Returns { reply, escalate } — reply has the marker stripped.
  */
 export async function askClaude(env, context, history, kb) {
+  // Dev-only escape hatch: lets `wrangler dev` and tests exercise the full
+  // request path without an Anthropic API key. Never set in production.
+  if (env.MOCK_CLAUDE === '1') {
+    const last = String(history[history.length - 1]?.content || '');
+    const escalate = /human|person|broken|billing/i.test(last);
+    return {
+      reply: `[mock reply for "${last.slice(0, 60)}"] KB context loaded: ${kb.length} chars.`,
+      escalate,
+    };
+  }
+
   const client = new Anthropic({ apiKey: env.ANTHROPIC_API_KEY });
 
   // Stable persona+KB first with a cache breakpoint; per-site context after it,

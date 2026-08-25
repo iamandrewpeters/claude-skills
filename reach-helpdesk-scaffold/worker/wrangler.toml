@@ -2,11 +2,8 @@ name = "reach-helpdesk"
 main = "src/index.js"
 compatibility_date = "2026-08-01"
 
-# Bundle kb/*.md as text modules (imported in src/kb.js)
-[[rules]]
-type = "Text"
-globs = ["**/*.md"]
-fallthrough = true
+# kb/*.md is compiled into src/kb-data.js by tools/build-kb.js
+# (run automatically by the dev/deploy/test npm scripts)
 
 # npx wrangler d1 create reach-helpdesk → paste database_id below,
 # then: npx wrangler d1 execute reach-helpdesk --file=schema.sql --remote

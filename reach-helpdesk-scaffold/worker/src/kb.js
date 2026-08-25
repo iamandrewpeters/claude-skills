@@ -1,13 +1,8 @@
-// Knowledge base: kb/*.md files bundled as text modules (wrangler [[rules]]).
-// Retrieval is deliberately naive keyword-overlap ranking — plenty at current
-// doc volume. If the KB outgrows the prompt, upgrade path is Vectorize.
+// Knowledge base retrieval over kb/*.md (bundled via tools/build-kb.js →
+// src/kb-data.js). Deliberately naive keyword-overlap ranking — plenty at
+// current doc volume. If the KB outgrows the prompt, upgrade path is Vectorize.
 
-import faithmadeGettingStarted from '../../kb/faithmade/getting-started.md';
-
-// Register new kb/ files here until a glob build step exists (kb/README.md).
-const KB_FILES = [
-  { path: 'faithmade/getting-started.md', text: faithmadeGettingStarted },
-];
+import { KB_FILES } from './kb-data.js';
 
 const STOPWORDS = new Set(
   'a an and are as at be but by can do for how i in is it my of on or the to what when where why with you your'.split(' ')
