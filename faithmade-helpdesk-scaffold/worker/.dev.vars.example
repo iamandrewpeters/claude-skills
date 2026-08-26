@@ -1,0 +1,7 @@
+# Copy to .dev.vars for `wrangler dev` (never commit .dev.vars)
+# MOCK_CLAUDE=1 → canned replies, no API key needed (dev only, never in prod)
+MOCK_CLAUDE=1
+ANTHROPIC_API_KEY=sk-ant-...
+WIDGET_SIGNING_SECRET=dev-secret
+GHL_WEBHOOK_URL=https://services.leadconnectorhq.com/hooks/...
+ADMIN_KEY=dev-admin

@@ -1,0 +1,21 @@
+name = "faithmade-helpdesk"
+main = "src/index.js"
+compatibility_date = "2026-08-01"
+
+# kb/*.md is compiled into src/kb-data.js by tools/build-kb.js
+# (run automatically by the dev/deploy/test npm scripts)
+
+# npx wrangler d1 create faithmade-helpdesk → paste database_id below,
+# then: npx wrangler d1 execute faithmade-helpdesk --file=schema.sql --remote
+[[d1_databases]]
+binding = "DB"
+database_name = "faithmade-helpdesk"
+database_id = "c6006496-c14d-42c9-898a-c183d8930d03"
+
+[vars]
+CLAUDE_MODEL = "claude-opus-5"
+
+# Secrets (npx wrangler secret put <NAME>):
+#   ANTHROPIC_API_KEY      — Claude API key
+#   WIDGET_SIGNING_SECRET  — shared with faithmade-admin (openssl rand -hex 32)
+#   GHL_WEBHOOK_URL        — HighLevel inbound-webhook trigger URL (docs/GHL-SETUP.md)

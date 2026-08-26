@@ -1,0 +1,306 @@
+/* Figtree is loaded as its own stylesheet by the embedder (faithmade-admin
+   enqueues it; demo/index.html links it) — no render-blocking @import here. */
+
+#rhd-root [hidden] { display: none !important; }
+
+#rhd-root {
+  --leo: #69af95;
+  --leo-deep: #4c8b73;
+  --leo-dark: #35604f;
+  --ink: #22302b;
+  --muted: #6e7f78;
+  --line: #e1e9e5;
+  --soft: #edf5f1;
+  --mist: #f4f8f6;
+  --card: #ffffff;
+  --amber: #b07a33;
+  --amber-soft: #fbf3e4;
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 99999;
+  font-family: 'Figtree', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* ---------- Launcher ---------- */
+#rhd-root .rhd-launcher {
+  position: relative;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  border: none;
+  background: linear-gradient(135deg, var(--leo) 0%, var(--leo-dark) 100%);
+  color: #fff;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(34, 48, 43, 0.22), 0 12px 32px rgba(34, 48, 43, 0.22);
+  display: grid;
+  place-items: center;
+  transition: transform 0.16s ease, box-shadow 0.16s ease;
+}
+#rhd-root .rhd-launcher:hover { transform: translateY(-2px) scale(1.04); box-shadow: 0 6px 16px rgba(34, 48, 43, 0.26), 0 16px 40px rgba(34, 48, 43, 0.26); }
+#rhd-root .rhd-launcher:focus-visible { outline: 3px solid var(--leo); outline-offset: 3px; }
+#rhd-root .rhd-launcher::after {
+  content: '';
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #47d18f;
+  border: 2.5px solid #fff;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+#rhd-root.rhd-team-online .rhd-launcher::after { opacity: 1; }
+#rhd-root .rhd-ic-close { display: none; }
+#rhd-root.rhd-open .rhd-ic-chat { display: none; }
+#rhd-root.rhd-open .rhd-ic-close { display: block; }
+
+/* ---------- Panel ---------- */
+#rhd-root .rhd-panel {
+  position: absolute;
+  right: 0;
+  bottom: 76px;
+  width: 384px;
+  max-width: calc(100vw - 32px);
+  height: min(640px, calc(100vh - 130px));
+  display: flex;
+  flex-direction: column;
+  background: var(--card);
+  border-radius: 20px;
+  box-shadow: 0 2px 8px rgba(34, 48, 43, 0.10), 0 24px 64px rgba(34, 48, 43, 0.30);
+  overflow: hidden;
+  animation: rhd-pop 0.24s cubic-bezier(0.21, 1.02, 0.55, 1);
+  transform-origin: bottom right;
+}
+@keyframes rhd-pop { from { opacity: 0; transform: translateY(14px) scale(0.96); } }
+@media (prefers-reduced-motion: reduce) {
+  #rhd-root .rhd-panel, #rhd-root .rhd-msg { animation: none !important; }
+  #rhd-root .rhd-launcher { transition: none; }
+}
+
+/* ---------- Header ---------- */
+#rhd-root .rhd-header {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  padding: 18px 20px;
+  background:
+    radial-gradient(120% 160% at 0% 0%, rgba(255, 255, 255, 0.14) 0%, rgba(255, 255, 255, 0) 52%),
+    linear-gradient(135deg, var(--leo-deep) 0%, var(--leo-dark) 100%);
+  color: #fff;
+}
+#rhd-root .rhd-title { font-weight: 800; font-size: 18px; line-height: 1.15; letter-spacing: -0.01em; }
+#rhd-root .rhd-subtitle { font-size: 12.5px; font-weight: 500; opacity: 0.92; display: flex; align-items: center; gap: 6px; margin-top: 1px; }
+#rhd-root .rhd-presence { width: 8px; height: 8px; border-radius: 50%; background: rgba(255, 255, 255, 0.4); flex-shrink: 0; }
+#rhd-root .rhd-presence-on { background: #6fe3a5; box-shadow: 0 0 0 3px rgba(111, 227, 165, 0.28); }
+
+/* ---------- Avatars ---------- */
+#rhd-root .rhd-avatar {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  font-size: 11.5px;
+  font-weight: 700;
+}
+#rhd-root .rhd-avatar-leo { background: linear-gradient(135deg, var(--leo), var(--leo-dark)); color: #fff; }
+#rhd-root .rhd-avatar-team { background: var(--ink); color: #fff; }
+#rhd-root .rhd-avatar-header {
+  width: 42px;
+  height: 42px;
+  background: rgba(255, 255, 255, 0.14);
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.35);
+}
+
+/* ---------- Messages ---------- */
+#rhd-root .rhd-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 18px 16px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  background: var(--mist);
+  scroll-behavior: smooth;
+}
+#rhd-root .rhd-sender {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 12px 0 4px 36px;
+}
+#rhd-root .rhd-sender-user { align-self: flex-end; margin: 12px 4px 4px 0; }
+#rhd-root .rhd-row { display: flex; align-items: flex-end; gap: 8px; }
+#rhd-root .rhd-row-user { justify-content: flex-end; }
+#rhd-root .rhd-msg {
+  max-width: 80%;
+  padding: 10px 14px;
+  border-radius: 16px;
+  font-size: 13.5px;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  animation: rhd-fade 0.2s ease;
+}
+@keyframes rhd-fade { from { opacity: 0; transform: translateY(5px); } }
+#rhd-root .rhd-msg-user {
+  background: linear-gradient(135deg, var(--leo-deep), var(--leo-dark));
+  color: #fff;
+  border-bottom-right-radius: 5px;
+  box-shadow: 0 2px 6px rgba(53, 96, 79, 0.24);
+}
+#rhd-root .rhd-msg-assistant {
+  background: var(--card);
+  border-bottom-left-radius: 5px;
+  box-shadow: 0 1px 2px rgba(34, 48, 43, 0.07), 0 3px 10px rgba(34, 48, 43, 0.06);
+}
+#rhd-root .rhd-msg-agent {
+  background: var(--ink);
+  color: #fff;
+  border-bottom-left-radius: 5px;
+  box-shadow: 0 2px 8px rgba(34, 48, 43, 0.30);
+}
+
+/* ---------- Typing indicator ---------- */
+#rhd-root .rhd-typing { display: flex; gap: 4px; padding: 14px 15px; }
+#rhd-root .rhd-typing span { width: 6px; height: 6px; border-radius: 50%; background: var(--leo-deep); opacity: 0.5; animation: rhd-bounce 1.1s infinite; }
+#rhd-root .rhd-typing span:nth-child(2) { animation-delay: 0.15s; }
+#rhd-root .rhd-typing span:nth-child(3) { animation-delay: 0.3s; }
+@keyframes rhd-bounce { 0%, 60%, 100% { transform: none; opacity: 0.45; } 30% { transform: translateY(-4px); opacity: 1; } }
+
+/* ---------- Suggestion chips ---------- */
+#rhd-root .rhd-chips { display: flex; flex-wrap: wrap; gap: 7px; padding: 10px 16px 6px; background: var(--mist); justify-content: flex-end; }
+#rhd-root .rhd-chip {
+  border: 1px solid rgba(76, 139, 115, 0.35);
+  color: var(--leo-dark);
+  background: var(--card);
+  border-radius: 99px;
+  padding: 7px 13px;
+  font-size: 12.5px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(34, 48, 43, 0.06);
+  transition: background 0.13s ease, transform 0.13s ease, box-shadow 0.13s ease;
+}
+#rhd-root .rhd-chip:hover { background: var(--soft); transform: translateY(-1px); box-shadow: 0 3px 8px rgba(34, 48, 43, 0.10); }
+
+/* ---------- Escalate card ---------- */
+#rhd-root .rhd-escalate {
+  margin: 8px 12px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--card);
+  font-size: 13px;
+  box-shadow: 0 6px 18px rgba(34, 48, 43, 0.10);
+}
+#rhd-root .rhd-esc-title { margin: 0 0 9px; font-weight: 700; font-size: 13.5px; color: var(--ink); display: flex; align-items: center; gap: 7px; }
+#rhd-root .rhd-esc-title::before { content: '⚡'; font-size: 14px; color: var(--amber); }
+#rhd-root .rhd-esc-msg,
+#rhd-root .rhd-esc-phone {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  margin: 0 0 7px;
+  padding: 9px 11px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  font-size: 13px;
+  font-family: inherit;
+  color: var(--ink);
+  resize: none;
+  outline: none;
+  transition: border-color 0.12s ease, box-shadow 0.12s ease;
+  background: var(--mist);
+}
+#rhd-root .rhd-esc-msg:focus,
+#rhd-root .rhd-esc-phone:focus { border-color: var(--leo-deep); box-shadow: 0 0 0 3px rgba(105, 175, 149, 0.18); background: var(--card); }
+#rhd-root .rhd-escalate-btn {
+  width: 100%;
+  border: none;
+  background: linear-gradient(135deg, var(--leo-deep), var(--leo-dark));
+  color: #fff;
+  padding: 10px 14px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 13.5px;
+  font-weight: 700;
+  font-family: inherit;
+  box-shadow: 0 3px 10px rgba(53, 96, 79, 0.28);
+  transition: filter 0.12s ease, transform 0.12s ease;
+}
+#rhd-root .rhd-escalate-btn:hover { filter: brightness(1.06); transform: translateY(-1px); }
+
+/* ---------- Composer ---------- */
+#rhd-root .rhd-form {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 12px 14px 8px;
+  background: var(--card);
+  border-top: 1px solid var(--line);
+}
+#rhd-root .rhd-input {
+  flex: 1;
+  border: 1px solid var(--line);
+  background: var(--mist);
+  border-radius: 99px;
+  padding: 11px 17px;
+  font-size: 13.5px;
+  font-family: inherit;
+  color: var(--ink);
+  outline: none;
+  transition: border-color 0.12s ease, box-shadow 0.12s ease, background 0.12s ease;
+}
+#rhd-root .rhd-input::placeholder { color: var(--muted); }
+#rhd-root .rhd-input:focus { border-color: var(--leo-deep); background: var(--card); box-shadow: 0 0 0 3px rgba(105, 175, 149, 0.18); }
+#rhd-root .rhd-send {
+  border: none;
+  background: linear-gradient(135deg, var(--leo-deep), var(--leo-dark));
+  color: #fff;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  box-shadow: 0 3px 10px rgba(53, 96, 79, 0.30);
+  transition: filter 0.12s ease, transform 0.12s ease;
+}
+#rhd-root .rhd-send:hover { filter: brightness(1.07); transform: scale(1.05); }
+
+/* ---------- Footer ---------- */
+#rhd-root .rhd-footer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 4px 0 10px;
+  background: var(--card);
+  font-size: 11px;
+  color: var(--muted);
+}
+#rhd-root .rhd-footer::after { content: 'Leo · Faithmade AI'; font-weight: 600; letter-spacing: 0.02em; }
+#rhd-root .rhd-footer::before { content: ''; order: 2; width: 3px; height: 3px; border-radius: 50%; background: var(--line); }
+#rhd-root .rhd-human-link {
+  order: 1;
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 11px;
+  font-family: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+#rhd-root .rhd-human-link:hover { color: var(--leo-dark); }

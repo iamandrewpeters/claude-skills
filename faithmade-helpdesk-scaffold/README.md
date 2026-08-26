@@ -1,0 +1,76 @@
+# faithmade-helpdesk
+
+**Leo**-powered support for **Faithmade** — chat bot, live chat, ticket tracking, and HighLevel SMS escalation for church sites. Replaces Help Scout. (Built by The Reach Company; Faithmade-scoped for now.)
+
+## What it does
+
+- **Front line:** A chat widget in wp-admin of every Faithmade tenant site (shipped via `faithmade-admin`). Claude answers support questions from the knowledge base in `kb/`, already knowing which church, site, and user is asking.
+- **Escalation:** When the bot can't resolve something (or the user asks for a human), the conversation is pushed into a HighLevel workflow via inbound webhook → contact upsert → **SMS notification to Andrew** → reply from GHL Conversations by email/SMS.
+- **Human inbox:** HighLevel Conversations replaces the Help Scout mailbox. `support@` email forwards into GHL so email tickets land in the same place.
+
+```
+wp-admin (tenant site)                Cloudflare                     HighLevel
+┌─────────────────────┐   HTTPS   ┌───────────────┐   webhook   ┌──────────────────┐
+│ widget.js            │─────────▶│ Worker         │────────────▶│ Workflow:         │
+│ (Help tab, knows     │  /chat   │  • Claude API  │  /escalate  │  upsert contact   │
+│  site+user+church)   │◀─────────│  • kb/ docs    │             │  add note         │
+└─────────────────────┘   reply   │  • D1 log     │             │  SMS → Andrew     │
+                                  └───────────────┘             │  Conversations    │
+                                                                └──────────────────┘
+```
+
+## Repo layout
+
+| Path | What |
+|---|---|
+| `worker/` | Cloudflare Worker — chat API (Claude), escalation bridge (GHL), D1 conversation log, `/admin` ticket-tracking views (`?key=ADMIN_KEY`) |
+| `widget/` | Embeddable vanilla-JS chat widget for wp-admin (later folded into `faithmade-admin`) |
+| `kb/` | Markdown knowledge base the bot answers from (Help Scout Docs migrate here) |
+| `docs/ARCHITECTURE.md` | Full design + decision record (why hybrid, not pure GHL / full custom) |
+| `docs/GHL-SETUP.md` | HighLevel-side setup: inbound webhook workflow, SMS step, support@ forwarding |
+
+## Status
+
+- [x] Architecture decided (hybrid: custom Claude bot + GHL inbox — see `docs/ARCHITECTURE.md`)
+- [x] Worker: `/chat`, `/escalate`, `/health`, HMAC auth, D1 schema — **runs locally, 22 tests passing** (`npm test`)
+- [x] Widget: vanilla JS, verified in Chromium against the local Worker (see `demo/`)
+- [x] KB build step (`tools/build-kb.js`) — every `kb/**/*.md` auto-bundled; 5 seed articles
+- [ ] Deploy Worker (`wrangler deploy`) + create D1 DB + set secrets
+- [ ] Build GHL workflow (`docs/GHL-SETUP.md`) and set `GHL_WEBHOOK_URL`
+- [ ] Import Help Scout Docs into `kb/`
+- [ ] Ship widget through `faithmade-admin` (Help tab)
+- [ ] Forward support@ into GHL Conversations, then cancel Help Scout
+
+## Quickstart
+
+```bash
+cd worker
+npm install
+
+# 1. Create the D1 database, paste the id into wrangler.toml
+npx wrangler d1 create faithmade-helpdesk
+npx wrangler d1 execute faithmade-helpdesk --file=schema.sql --remote
+
+# 2. Secrets
+npx wrangler secret put ANTHROPIC_API_KEY
+npx wrangler secret put WIDGET_SIGNING_SECRET   # openssl rand -hex 32
+npx wrangler secret put GHL_WEBHOOK_URL         # from docs/GHL-SETUP.md
+
+# 3. Ship it
+npm run deploy
+```
+
+## Local development (no Cloudflare account or API key needed)
+
+```bash
+cd worker
+npm install
+npm test                    # 22 tests: auth HMAC, KB retrieval, live chat, full request path
+npm run db:schema:local     # local D1
+cp .dev.vars.example .dev.vars   # set MOCK_CLAUDE=1 for keyless dev
+npm run dev                 # workerd on :8787
+```
+
+`MOCK_CLAUDE=1` makes `/chat` return canned replies so the whole loop (widget → Worker → D1 → escalation webhook) runs without an Anthropic key — never set it in production. `demo/index.html` (serve the repo root, e.g. `python3 -m http.server 8899`) is a fake wp-admin page that exercises the widget against the local Worker.
+
+The bot defaults to `claude-opus-5` and ships with Anthropic's server-side refusal fallback enabled. Override the model with the `CLAUDE_MODEL` var in `wrangler.toml` (e.g. `claude-sonnet-5` to trade some quality for cost — support Q&A is a workload where Sonnet holds up well).
