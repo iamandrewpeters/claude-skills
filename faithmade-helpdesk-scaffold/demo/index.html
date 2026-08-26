@@ -15,6 +15,7 @@
   .content h1 { font-size: 23px; font-weight: 400; color: #1d2327; }
   .card { background: #fff; border: 1px solid #c3c4c7; padding: 16px; max-width: 640px; margin-top: 16px; }
 </style>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap">
 <link rel="stylesheet" href="../widget/widget.css">
 </head>
 <body>
@@ -32,17 +33,20 @@
 (async function () {
   // DEV DEMO ONLY — signing in the browser with the known local dev secret.
   const enc = new TextEncoder();
-  const ctx = {
-    site: 'https://gracechurch.org',
-    church: 'Grace Church',
-    user_name: 'Jane Smith',
-    user_email: 'jane@gracechurch.org',
-    ts: Math.floor(Date.now() / 1000),
-  };
-  const key = await crypto.subtle.importKey('raw', enc.encode('dev-secret'), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
-  const sig = await crypto.subtle.sign('HMAC', key, enc.encode(`${ctx.site}|${ctx.user_email}|${ctx.ts}`));
-  ctx.sig = [...new Uint8Array(sig)].map((b) => b.toString(16).padStart(2, '0')).join('');
-  window.FaithmadeHelpdesk = { endpoint: 'http://127.0.0.1:8787', context: ctx };
+  async function signContext() {
+    const ctx = {
+      site: 'https://gracechurch.org',
+      church: 'Grace Church',
+      user_name: 'Jane Smith',
+      user_email: 'jane@gracechurch.org',
+      ts: Math.floor(Date.now() / 1000),
+    };
+    const key = await crypto.subtle.importKey('raw', enc.encode('dev-secret'), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+    const sig = await crypto.subtle.sign('HMAC', key, enc.encode(`${ctx.site}|${ctx.user_email}|${ctx.ts}`));
+    ctx.sig = [...new Uint8Array(sig)].map((b) => b.toString(16).padStart(2, '0')).join('');
+    return ctx;
+  }
+  window.FaithmadeHelpdesk = { endpoint: 'http://127.0.0.1:8787', context: await signContext(), refresh: signContext };
   const s = document.createElement('script');
   s.src = '../widget/widget.js';
   document.body.appendChild(s);

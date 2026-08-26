@@ -8,6 +8,8 @@
 
   var cfg = window.FaithmadeHelpdesk;
   if (!cfg || !cfg.endpoint || !cfg.context) return;
+  cfg.endpoint = String(cfg.endpoint).replace(/\/+$/, '');
+  var ctxLoadedAt = Date.now();
 
   var STORAGE_KEY = 'rhd-conversation-id';
   var conversationId = null;
@@ -39,11 +41,11 @@
   var root = document.createElement('div');
   root.id = 'rhd-root';
   root.innerHTML =
-    '<button type="button" class="rhd-launcher" aria-label="Chat with Leo">' +
+    '<button type="button" class="rhd-launcher" aria-label="Chat with Leo" aria-controls="rhd-panel" aria-expanded="false">' +
     '  <svg class="rhd-ic-chat" viewBox="0 0 24 24" width="26" height="26" fill="currentColor"><path d="M12 3C7 3 3 6.6 3 11c0 2.1.9 4 2.4 5.4-.2 1.1-.8 2.4-1.9 3.3-.2.2-.1.6.2.6 1.9.1 3.6-.6 4.7-1.4 1.1.4 2.3.6 3.6.6 5 0 9-3.6 9-8S17 3 12 3z"/></svg>' +
     '  <svg class="rhd-ic-close" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>' +
     '</button>' +
-    '<div class="rhd-panel" hidden>' +
+    '<div class="rhd-panel" id="rhd-panel" role="dialog" aria-label="Leo, Faithmade support chat" hidden>' +
     '  <div class="rhd-header">' +
     LEO_AVATAR.replace('rhd-avatar ', 'rhd-avatar rhd-avatar-header ') +
     '    <div class="rhd-header-text">' +
@@ -55,12 +57,12 @@
     '  <div class="rhd-chips"></div>' +
     '  <div class="rhd-escalate" hidden>' +
     '    <p class="rhd-esc-title">Bring in the team</p>' +
-    '    <textarea class="rhd-esc-msg" rows="2" maxlength="1000" placeholder="Anything else we should know? (optional)"></textarea>' +
-    '    <input class="rhd-esc-phone" type="tel" maxlength="30" placeholder="Mobile number for a text back (optional)">' +
+    '    <textarea class="rhd-esc-msg" rows="2" maxlength="1000" aria-label="Note for the team (optional)" placeholder="Anything else we should know? (optional)"></textarea>' +
+    '    <input class="rhd-esc-phone" type="tel" maxlength="30" aria-label="Mobile number for a text back (optional)" placeholder="Mobile number for a text back (optional)">' +
     '    <button type="button" class="rhd-escalate-btn">Send to the team</button>' +
     '  </div>' +
     '  <form class="rhd-form">' +
-    '    <input class="rhd-input" type="text" placeholder="Ask Leo anything…" autocomplete="off" maxlength="4000">' +
+    '    <input class="rhd-input" type="text" aria-label="Ask Leo anything" placeholder="Ask Leo anything…" autocomplete="off" maxlength="4000">' +
     '    <button class="rhd-send" type="submit" aria-label="Send">' +
     '      <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M3.4 20.4l17.4-7.5c.8-.4.8-1.5 0-1.8L3.4 3.6c-.7-.3-1.4.3-1.3 1l.9 5.6c0 .4.4.7.8.8l8.5 1-8.5 1c-.4 0-.7.4-.8.8l-.9 5.6c-.1.7.6 1.3 1.3 1z"/></svg>' +
     '    </button>' +
@@ -148,29 +150,54 @@
   }
 
   // --- API -----------------------------------------------------------------
-  function post(path, body) {
-    body.context = cfg.context;
-    body.conversation_id = conversationId;
-    return fetch(cfg.endpoint + path, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify(body),
-    }).then(function (res) {
-      if (!res.ok) throw new Error('HTTP ' + res.status);
-      return res.json();
+  // Signed contexts expire (10 min server-side); refresh before they go stale
+  // via cfg.refresh() (demo) or the wp-admin ajax endpoint (cfg.ajax).
+  function freshContext(force) {
+    var age = (Date.now() - ctxLoadedAt) / 1000;
+    if (!force && age < 480) return Promise.resolve(cfg.context);
+    var next;
+    if (typeof cfg.refresh === 'function') {
+      next = Promise.resolve(cfg.refresh());
+    } else if (cfg.ajax && cfg.ajax.url) {
+      next = fetch(cfg.ajax.url + '?action=fm_helpdesk_context&_ajax_nonce=' + encodeURIComponent(cfg.ajax.nonce), {
+        credentials: 'same-origin',
+      })
+        .then(function (r) { return r.json(); })
+        .then(function (d) { return d && d.success && d.data ? d.data : null; });
+    } else {
+      next = Promise.resolve(null);
+    }
+    return next
+      .then(function (ctx) {
+        if (ctx && ctx.sig) {
+          cfg.context = ctx;
+          ctxLoadedAt = Date.now();
+        }
+        return cfg.context;
+      })
+      .catch(function () { return cfg.context; });
+  }
+
+  function post(path, body, isRetry) {
+    return freshContext(false).then(function (ctx) {
+      body.context = ctx;
+      body.conversation_id = conversationId;
+      return fetch(cfg.endpoint + path, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(body),
+      }).then(function (res) {
+        if (res.status === 401 && !isRetry) {
+          return freshContext(true).then(function () { return post(path, body, true); });
+        }
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        return res.json();
+      });
     });
   }
 
   function poll() {
-    var q =
-      '?conversation_id=' + encodeURIComponent(conversationId) +
-      '&after_id=' + lastId +
-      '&site=' + encodeURIComponent(cfg.context.site) +
-      '&user_email=' + encodeURIComponent(cfg.context.user_email) +
-      '&ts=' + encodeURIComponent(cfg.context.ts) +
-      '&sig=' + encodeURIComponent(cfg.context.sig);
-    fetch(cfg.endpoint + '/messages' + q)
-      .then(function (res) { return res.ok ? res.json() : null; })
+    post('/messages', { after_id: lastId })
       .then(function (data) {
         if (!data) return;
         setPresence(!!data.team_online);
@@ -258,6 +285,7 @@
     var opening = panel.hidden;
     panel.hidden = !opening ? true : false;
     root.classList.toggle('rhd-open', opening);
+    launcher.setAttribute('aria-expanded', opening ? 'true' : 'false');
     if (opening) {
       greet();
       startPolling();

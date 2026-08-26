@@ -145,14 +145,9 @@ export function adminPost(path, body) {
 }
 
 export function pollRequest(env, conversationId, afterId = 0) {
-  const ctx = testContext(env.WIDGET_SIGNING_SECRET);
-  const q = new URLSearchParams({
+  return postJson('/messages', {
+    context: testContext(env.WIDGET_SIGNING_SECRET),
     conversation_id: conversationId,
-    after_id: String(afterId),
-    site: ctx.site,
-    user_email: ctx.user_email,
-    ts: String(ctx.ts),
-    sig: ctx.sig,
+    after_id: afterId,
   });
-  return new Request(`https://helpdesk.test/messages?${q}`);
 }

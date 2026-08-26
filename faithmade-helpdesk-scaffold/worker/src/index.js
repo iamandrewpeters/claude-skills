@@ -64,19 +64,11 @@ async function handleChat(env, request, body) {
   });
 }
 
-// Client poll: new messages after last_id, presence, and thread state.
-async function handleMessages(env, request, url) {
-  const context = {
-    site: url.searchParams.get('site'),
-    user_email: url.searchParams.get('user_email'),
-    ts: url.searchParams.get('ts'),
-    sig: url.searchParams.get('sig'),
-  };
-  const auth = await verifyContext(env, context);
-  if (!auth.ok) return json(request, 401, { error: auth.error });
-
-  const conversationId = url.searchParams.get('conversation_id') || '';
-  const afterId = Number(url.searchParams.get('after_id') || 0);
+// Client poll (POST so identity stays out of URLs/logs): new messages
+// after last_id, presence, and thread state.
+async function handleMessages(env, request, body) {
+  const conversationId = body.conversation_id || '';
+  const afterId = Number(body.after_id || 0);
   const conv = await db.getConversation(env, conversationId);
   const messages = conv ? await db.messagesAfter(env, conversationId, afterId) : [];
   return json(request, 200, {
@@ -136,10 +128,7 @@ export default {
     }
 
     try {
-      if (request.method === 'GET' && url.pathname === '/messages') {
-        return await handleMessages(env, request, url);
-      }
-      if (request.method !== 'POST' || !['/chat', '/escalate'].includes(url.pathname)) {
+      if (request.method !== 'POST' || !['/chat', '/escalate', '/messages'].includes(url.pathname)) {
         return json(request, 404, { error: 'not found' });
       }
 
@@ -155,9 +144,9 @@ export default {
         return json(request, 401, { error: auth.error });
       }
 
-      return url.pathname === '/chat'
-        ? await handleChat(env, request, body)
-        : await handleEscalate(env, request, body);
+      if (url.pathname === '/chat') return await handleChat(env, request, body);
+      if (url.pathname === '/messages') return await handleMessages(env, request, body);
+      return await handleEscalate(env, request, body);
     } catch (err) {
       console.error('helpdesk error', err);
       return json(request, 500, { error: 'internal error' });

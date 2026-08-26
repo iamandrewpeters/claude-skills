@@ -1,4 +1,5 @@
-@import url('https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap');
+/* Figtree is loaded as its own stylesheet by the embedder (faithmade-admin
+   enqueues it; demo/index.html links it) — no render-blocking @import here. */
 
 #rhd-root [hidden] { display: none !important; }
 

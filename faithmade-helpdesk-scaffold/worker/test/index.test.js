@@ -126,10 +126,12 @@ test('live chat: agent reply takes over, Leo stands down, client polls it', asyn
 
 test('/messages rejects bad signature', async () => {
   const env = testEnv();
-  const req = pollRequest(env, 'conv-test-1');
-  const url = new URL(req.url);
-  url.searchParams.set('sig', 'f'.repeat(64));
-  const res = await worker.fetch(new Request(url), env);
+  const body = {
+    context: { ...testContext(env.WIDGET_SIGNING_SECRET), sig: 'f'.repeat(64) },
+    conversation_id: 'conv-test-1',
+    after_id: 0,
+  };
+  const res = await worker.fetch(postJson('/messages', body), env);
   assert.equal(res.status, 401);
 });
 
