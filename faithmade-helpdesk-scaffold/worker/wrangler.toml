@@ -10,7 +10,7 @@ compatibility_date = "2026-08-01"
 [[d1_databases]]
 binding = "DB"
 database_name = "faithmade-helpdesk"
-database_id = "REPLACE_WITH_D1_DATABASE_ID"
+database_id = "c6006496-c14d-42c9-898a-c183d8930d03"
 
 [vars]
 CLAUDE_MODEL = "claude-opus-5"
