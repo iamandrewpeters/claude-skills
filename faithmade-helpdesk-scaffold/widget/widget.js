@@ -1,12 +1,12 @@
 /**
  * Leo — Faithmade support widget. Vanilla JS, no dependencies.
- * Expects window.ReachHelpdesk = { endpoint, context: {site, church, user_name, user_email, ts, sig} }
+ * Expects window.FaithmadeHelpdesk = { endpoint, context: {site, church, user_name, user_email, ts, sig} }
  * printed server-side by faithmade-admin for logged-in users.
  */
 (function () {
   'use strict';
 
-  var cfg = window.ReachHelpdesk;
+  var cfg = window.FaithmadeHelpdesk;
   if (!cfg || !cfg.endpoint || !cfg.context) return;
 
   var STORAGE_KEY = 'rhd-conversation-id';
@@ -33,7 +33,7 @@
 
   var LEO_AVATAR =
     '<span class="rhd-avatar rhd-avatar-leo" aria-hidden="true"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M5 6 L12 3 L19 6"/><circle cx="12" cy="13" r="6.5"/><circle cx="9.8" cy="12.4" r="0.6" fill="currentColor"/><circle cx="14.2" cy="12.4" r="0.6" fill="currentColor"/><path d="M9.5 15.4 Q12 17.2 14.5 15.4"/></svg></span>';
-  var TEAM_AVATAR = '<span class="rhd-avatar rhd-avatar-team" aria-hidden="true">R</span>';
+  var TEAM_AVATAR = '<span class="rhd-avatar rhd-avatar-team" aria-hidden="true">F</span>';
 
   // --- DOM -----------------------------------------------------------------
   var root = document.createElement('div');
@@ -82,7 +82,7 @@
   // --- rendering -----------------------------------------------------------
   function senderLabel(role) {
     if (role === 'user') return 'You';
-    if (role === 'agent') return "The Reach team";
+    if (role === 'agent') return "The Faithmade team";
     return 'Leo';
   }
 

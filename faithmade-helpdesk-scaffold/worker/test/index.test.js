@@ -139,7 +139,7 @@ test('admin shell requires the key; APIs serve inbox data', async () => {
 
   const shell = await worker.fetch(new Request('https://helpdesk.test/admin?key=test-admin'), env);
   assert.equal(shell.status, 200);
-  assert.match(await shell.text(), /Reach Helpdesk/);
+  assert.match(await shell.text(), /Faithmade Helpdesk/);
 
   await worker.fetch(postJson('/chat', chatBody(env, 'How do I add a sermon?')), env);
   const list = await worker.fetch(new Request('https://helpdesk.test/admin/api/conversations?key=test-admin'), env);

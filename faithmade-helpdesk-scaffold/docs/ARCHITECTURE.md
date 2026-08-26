@@ -2,7 +2,7 @@
 
 ## Problem
 
-The Reach Co / Faithmade support currently runs on **Help Scout**. Pain points:
+Faithmade support currently runs on **Help Scout**. Pain points:
 
 1. Another per-seat SaaS to pay for and manage.
 2. Notifications don't reach Andrew where he lives — he wants **SMS**, which HighLevel already does well via workflows.

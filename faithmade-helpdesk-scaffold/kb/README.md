@@ -17,7 +17,6 @@ The first `# heading` is the title; a `tags:` line improves retrieval. Keep file
 ## Layout
 
 - `faithmade/` — platform docs (sermons, groups, events, Beaver Builder modules, styles/customizer, Planning Center sync…)
-- `reach/` — The Reach Co agency docs (billing, hosting, requesting changes…)
 
 ## Migrating from Help Scout
 

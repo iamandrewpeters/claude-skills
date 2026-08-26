@@ -1,4 +1,4 @@
-// Reach Helpdesk inbox: live agent view over D1.
+// Faithmade Helpdesk inbox: live agent view over D1.
 //   GET  /admin?key=…                     app shell (list + thread + composer)
 //   GET  /admin/api/conversations         inbox list
 //   GET  /admin/api/conversation?id=…     thread (marks read)
@@ -69,7 +69,7 @@ async function api(env, request, url) {
 
 const SHELL = (key) => `<!doctype html><html><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Reach Helpdesk</title>
+<title>Faithmade Helpdesk</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap">
 <style>
   :root{--leo:#69af95;--leo-deep:#4c8b73;--leo-dark:#35604f;--leo-soft:#edf5f1;--mist:#f4f8f6;
@@ -157,7 +157,7 @@ const SHELL = (key) => `<!doctype html><html><head><meta charset="utf-8">
   @media (max-width:860px){.layout{grid-template-columns:1fr}.thread{display:none}.layout.viewing .list{display:none}.layout.viewing .thread{display:flex}}
 </style></head><body>
 <div class="topbar">
-  <div class="logo">L</div><h1>Reach Helpdesk <span>· Leo &amp; team</span></h1>
+  <div class="logo">L</div><h1>Faithmade Helpdesk <span>· Leo &amp; team</span></h1>
   <button class="theme" id="theme" aria-label="Toggle dark mode"></button>
   <div class="presence" id="presence"><span id="ptext">You're offline</span><span class="track"><span class="knob"></span></span></div>
 </div>

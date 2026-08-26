@@ -6,7 +6,7 @@ export async function escalateToGhl(env, { context, conversationId, reason, user
   if (!env.GHL_WEBHOOK_URL) return 0; // workflow not wired yet — recorded in D1, surfaced to the client as a failure
 
   const payload = {
-    source: 'reach-helpdesk',
+    source: 'faithmade-helpdesk',
     name: context.user_name || context.user_email,
     email: context.user_email,
     phone: phone || '',

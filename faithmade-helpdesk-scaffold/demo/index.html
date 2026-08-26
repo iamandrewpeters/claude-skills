@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>reach-helpdesk — local demo (dev only)</title>
+<title>faithmade-helpdesk — local demo (dev only)</title>
 <style>
   /* Rough wp-admin stand-in so the widget is seen in context */
   body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f0f0f1; }
@@ -42,7 +42,7 @@
   const key = await crypto.subtle.importKey('raw', enc.encode('dev-secret'), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
   const sig = await crypto.subtle.sign('HMAC', key, enc.encode(`${ctx.site}|${ctx.user_email}|${ctx.ts}`));
   ctx.sig = [...new Uint8Array(sig)].map((b) => b.toString(16).padStart(2, '0')).join('');
-  window.ReachHelpdesk = { endpoint: 'http://127.0.0.1:8787', context: ctx };
+  window.FaithmadeHelpdesk = { endpoint: 'http://127.0.0.1:8787', context: ctx };
   const s = document.createElement('script');
   s.src = '../widget/widget.js';
   document.body.appendChild(s);

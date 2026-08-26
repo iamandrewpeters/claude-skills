@@ -1,5 +1,5 @@
 {
-  "name": "reach-helpdesk-worker",
+  "name": "faithmade-helpdesk-worker",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -8,8 +8,8 @@
     "dev": "npm run kb && wrangler dev",
     "deploy": "npm run kb && wrangler deploy",
     "test": "npm run kb && node --test test/*.test.js",
-    "db:schema": "wrangler d1 execute reach-helpdesk --file=schema.sql --remote",
-    "db:schema:local": "wrangler d1 execute reach-helpdesk --local --file=schema.sql"
+    "db:schema": "wrangler d1 execute faithmade-helpdesk --file=schema.sql --remote",
+    "db:schema:local": "wrangler d1 execute faithmade-helpdesk --local --file=schema.sql"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.110.0"

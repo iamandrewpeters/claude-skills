@@ -28,7 +28,7 @@ One workflow + one email forward. Everything the Worker needs from GHL is the wo
 
 ```json
 {
-  "source": "reach-helpdesk",
+  "source": "faithmade-helpdesk",
   "name": "Jane Smith",
   "email": "jane@gracechurch.org",
   "phone": "",
@@ -73,7 +73,7 @@ add_action( 'admin_enqueue_scripts', function () {
     $ts   = time();
     $sig  = hash_hmac( 'sha256', $site . '|' . $user->user_email . '|' . $ts, $secret );
 
-    wp_add_inline_script( 'fm-helpdesk', 'window.ReachHelpdesk = ' . wp_json_encode( [
+    wp_add_inline_script( 'fm-helpdesk', 'window.FaithmadeHelpdesk = ' . wp_json_encode( [
         'endpoint' => 'https://helpdesk.thereach.workers.dev',
         'context'  => [
             'site'       => $site,

@@ -1,6 +1,6 @@
-# reach-helpdesk
+# faithmade-helpdesk
 
-Claude-powered support bot + HighLevel escalation bridge for **The Reach Company** and **Faithmade**. This replaces Help Scout.
+**Leo**-powered support for **Faithmade** — chat bot, live chat, ticket tracking, and HighLevel SMS escalation for church sites. Replaces Help Scout. (Built by The Reach Company; Faithmade-scoped for now.)
 
 ## What it does
 
@@ -32,7 +32,7 @@ wp-admin (tenant site)                Cloudflare                     HighLevel
 ## Status
 
 - [x] Architecture decided (hybrid: custom Claude bot + GHL inbox — see `docs/ARCHITECTURE.md`)
-- [x] Worker: `/chat`, `/escalate`, `/health`, HMAC auth, D1 schema — **runs locally, 19 tests passing** (`npm test`)
+- [x] Worker: `/chat`, `/escalate`, `/health`, HMAC auth, D1 schema — **runs locally, 22 tests passing** (`npm test`)
 - [x] Widget: vanilla JS, verified in Chromium against the local Worker (see `demo/`)
 - [x] KB build step (`tools/build-kb.js`) — every `kb/**/*.md` auto-bundled; 5 seed articles
 - [ ] Deploy Worker (`wrangler deploy`) + create D1 DB + set secrets
@@ -48,8 +48,8 @@ cd worker
 npm install
 
 # 1. Create the D1 database, paste the id into wrangler.toml
-npx wrangler d1 create reach-helpdesk
-npx wrangler d1 execute reach-helpdesk --file=schema.sql --remote
+npx wrangler d1 create faithmade-helpdesk
+npx wrangler d1 execute faithmade-helpdesk --file=schema.sql --remote
 
 # 2. Secrets
 npx wrangler secret put ANTHROPIC_API_KEY
@@ -65,7 +65,7 @@ npm run deploy
 ```bash
 cd worker
 npm install
-npm test                    # 19 tests: auth HMAC, KB retrieval, full request path
+npm test                    # 22 tests: auth HMAC, KB retrieval, live chat, full request path
 npm run db:schema:local     # local D1
 cp .dev.vars.example .dev.vars   # set MOCK_CLAUDE=1 for keyless dev
 npm run dev                 # workerd on :8787
