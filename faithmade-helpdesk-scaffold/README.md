@@ -1,76 +1,77 @@
-# faithmade-helpdesk
+# Faithmade Helpdesk
 
-**Leo**-powered support for **Faithmade** — chat bot, live chat, ticket tracking, and HighLevel SMS escalation for church sites. Replaces Help Scout. (Built by The Reach Company; Faithmade-scoped for now.)
+**Leo**, the Faithmade AI, plus a small custom help desk around it — replacing Help Scout for Faithmade church sites.
 
-## What it does
-
-- **Front line:** A chat widget in wp-admin of every Faithmade tenant site (shipped via `faithmade-admin`). Claude answers support questions from the knowledge base in `kb/`, already knowing which church, site, and user is asking.
-- **Escalation:** When the bot can't resolve something (or the user asks for a human), the conversation is pushed into a HighLevel workflow via inbound webhook → contact upsert → **SMS notification to Andrew** → reply from GHL Conversations by email/SMS.
-- **Human inbox:** HighLevel Conversations replaces the Help Scout mailbox. `support@` email forwards into GHL so email tickets land in the same place.
+- **Chat with Leo** in every tenant's wp-admin (widget shipped by `faithmade-admin`). Leo already knows which church, site, and person is asking, and answers from the knowledge base in `kb/` and from **answers the team has taught it**.
+- **Bring in a person.** Leo escalates when it can't help (or when asked). The team gets an SMS through HighLevel and an email.
+- **Coach Leo by email.** Just reply to Leo's email with how to answer. Leo replies to the church in its own words and **remembers** the answer for the next church that asks. Every memory is visible and editable in the inbox.
+- **Reply directly.** The "Reply to Jane directly" button in Leo's emails opens a phone-friendly page; your exact words go out signed by the Faithmade team.
+- **Live chat or email, automatically.** If the church is still in their dashboard, replies appear live in the chat; if they've left, they get an email they can answer.
+- **Ideas board.** Churches post feature ideas, vote, and comment from the lightbulb tab in the chat (Leo points feature requests there). The team triages on a kanban board and voters are emailed when an idea is planned, in progress, or shipped.
+- **Team inbox** at `/admin`: conversations (with reply / coach / internal-note composer), Ideas, Leo's memory, and an Email log with full previews. Dark mode included.
 
 ```
-wp-admin (tenant site)                Cloudflare                     HighLevel
-┌─────────────────────┐   HTTPS   ┌───────────────┐   webhook   ┌──────────────────┐
-│ widget.js            │─────────▶│ Worker         │────────────▶│ Workflow:         │
-│ (Help tab, knows     │  /chat   │  • Claude API  │  /escalate  │  upsert contact   │
-│  site+user+church)   │◀─────────│  • kb/ docs    │             │  add note         │
-└─────────────────────┘   reply   │  • D1 log     │             │  SMS → Andrew     │
-                                  └───────────────┘             │  Conversations    │
-                                                                └──────────────────┘
+wp-admin (each church)          Cloudflare Worker + D1                       The team
+┌──────────────────┐  /chat    ┌──────────────────────────┐  SMS (HighLevel) ┌──────────────┐
+│ Leo widget       │──────────▶│ Claude (Leo) + kb + memory│────────────────▶│ phone         │
+│  · Chat          │  /ideas   │ conversations · ideas     │  email (Resend)  │ email         │
+│  · Ideas         │◀──────────│ email in/out · inbox      │◀────────────────│ /admin inbox  │
+└──────────────────┘           └──────────────────────────┘  replies (Email  └──────────────┘
+                                                              Routing → Worker)
 ```
 
 ## Repo layout
 
 | Path | What |
 |---|---|
-| `worker/` | Cloudflare Worker — chat API (Claude), escalation bridge (GHL), D1 conversation log, `/admin` ticket-tracking views (`?key=ADMIN_KEY`) |
-| `widget/` | Embeddable vanilla-JS chat widget for wp-admin (later folded into `faithmade-admin`) |
-| `kb/` | Markdown knowledge base the bot answers from (Help Scout Docs migrate here) |
-| `docs/ARCHITECTURE.md` | Full design + decision record (why hybrid, not pure GHL / full custom) |
-| `docs/GHL-SETUP.md` | HighLevel-side setup: inbound webhook workflow, SMS step, support@ forwarding |
+| `worker/src/` | The Worker: widget API (`index.js`), conversation rules (`service.js`), Leo (`claude.js`), memory, Ideas, email in/out (`email/`), reply-link page, inbox API (`admin.js`) |
+| `worker/ui/` | The team inbox app (plain HTML/CSS/JS, inlined at build time by `tools/build-ui.js`) |
+| `worker/migrations/` | D1 schema, applied with `wrangler d1 migrations apply` |
+| `widget/` | The wp-admin widget (vanilla JS/CSS) — copied into `faithmade-admin/helpdesk/` |
+| `kb/` | Markdown knowledge base Leo answers from (bundled by `tools/build-kb.js`) |
+| `demo/index.html` | A fake wp-admin page for trying the widget against a local Worker |
+| `docs/EMAIL-SETUP.md` | Resend + Cloudflare Email Routing setup for the email loop |
+| `docs/GHL-SETUP.md` | HighLevel workflow for SMS escalation |
+| `docs/ARCHITECTURE.md` | Design and decision record |
 
-## Status
-
-- [x] Architecture decided (hybrid: custom Claude bot + GHL inbox — see `docs/ARCHITECTURE.md`)
-- [x] Worker: `/chat`, `/escalate`, `/health`, HMAC auth, D1 schema — **runs locally, 22 tests passing** (`npm test`)
-- [x] Widget: vanilla JS, verified in Chromium against the local Worker (see `demo/`)
-- [x] KB build step (`tools/build-kb.js`) — every `kb/**/*.md` auto-bundled; 5 seed articles
-- [ ] Deploy Worker (`wrangler deploy`) + create D1 DB + set secrets
-- [ ] Build GHL workflow (`docs/GHL-SETUP.md`) and set `GHL_WEBHOOK_URL`
-- [ ] Import Help Scout Docs into `kb/`
-- [ ] Ship widget through `faithmade-admin` (Help tab)
-- [ ] Forward support@ into GHL Conversations, then cancel Help Scout
-
-## Quickstart
+## Deploy
 
 ```bash
-cd worker
-npm install
-
-# 1. Create the D1 database, paste the id into wrangler.toml
-npx wrangler d1 create faithmade-helpdesk
-npx wrangler d1 execute faithmade-helpdesk --file=schema.sql --remote
-
-# 2. Secrets
+cd worker && npm install
 npx wrangler secret put ANTHROPIC_API_KEY
-npx wrangler secret put WIDGET_SIGNING_SECRET   # openssl rand -hex 32
-npx wrangler secret put GHL_WEBHOOK_URL         # from docs/GHL-SETUP.md
-
-# 3. Ship it
+npx wrangler secret put WIDGET_SIGNING_SECRET   # shared with faithmade-admin (openssl rand -hex 32)
+npx wrangler secret put TOKEN_SECRET            # Worker-only (openssl rand -hex 32)
+npx wrangler secret put ADMIN_KEY               # inbox sign-in
+npx wrangler secret put GHL_WEBHOOK_URL         # docs/GHL-SETUP.md
+npx wrangler secret put RESEND_API_KEY          # docs/EMAIL-SETUP.md
+# set TEAM_EMAILS / EMAIL_PROVIDER in wrangler.toml [vars]
+npm run db:migrate
 npm run deploy
 ```
+
+Then sign in at `https://helpdesk.faithmade.app/admin`.
 
 ## Local development (no Cloudflare account or API key needed)
 
 ```bash
 cd worker
 npm install
-npm test                    # 22 tests: auth HMAC, KB retrieval, live chat, full request path
-npm run db:schema:local     # local D1
-cp .dev.vars.example .dev.vars   # set MOCK_CLAUDE=1 for keyless dev
-npm run dev                 # workerd on :8787
+npm test                         # 71 tests — runs the Worker against real SQLite built from migrations/
+cp .dev.vars.example .dev.vars   # MOCK_CLAUDE=1 gives canned Leo replies
+npm run db:migrate:local
+npm run dev                      # http://127.0.0.1:8787  (inbox: /admin, key from .dev.vars)
 ```
 
-`MOCK_CLAUDE=1` makes `/chat` return canned replies so the whole loop (widget → Worker → D1 → escalation webhook) runs without an Anthropic key — never set it in production. `demo/index.html` (serve the repo root, e.g. `python3 -m http.server 8899`) is a fake wp-admin page that exercises the widget against the local Worker.
+Serve the repo root (`python3 -m http.server 8899`) and open `/demo/index.html` for a fake wp-admin with the widget. Simulate an email reply with
+`curl -X POST "http://127.0.0.1:8787/cdn-cgi/local/email?from=<team email>&to=<leo+… address from the Emails tab>" --data-binary @reply.eml`.
 
-The bot defaults to `claude-opus-5` and ships with Anthropic's server-side refusal fallback enabled. Override the model with the `CLAUDE_MODEL` var in `wrangler.toml` (e.g. `claude-sonnet-5` to trade some quality for cost — support Q&A is a workload where Sonnet holds up well).
+`MOCK_CLAUDE=1` is for dev and tests only — never set it in production. Leo runs on `claude-opus-5` with Anthropic's server-side refusal fallback; override with `CLAUDE_MODEL`.
+
+## Status
+
+- [x] Leo chat, KB, escalation (SMS via HighLevel), team inbox with live chat — **built, tested**
+- [x] Coach Leo by email + Leo's memory, reply-link page, email delivery to churches, Ideas board — **built, tested, not yet deployed**
+- [ ] Deploy the Worker, apply migrations, set secrets/vars (above)
+- [ ] Email: verify `reply.faithmade.app` in Resend, add the two Email Routing addresses (`docs/EMAIL-SETUP.md`)
+- [ ] Add the `helpdesk_widget_secret` broker key so `faithmade-admin` turns the widget on
+- [ ] Import Help Scout Docs into `kb/`, then cancel Help Scout

@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Faithmade Helpdesk</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap">
+<style>/*@inline admin.css*/</style>
+<script>try { var t = localStorage.getItem('rhd-theme'); if (t) document.documentElement.dataset.theme = t; } catch (e) {}</script>
+</head>
+<body>
+<header class="topbar">
+  <div class="logo">L</div>
+  <h1>Faithmade Helpdesk</h1>
+  <nav class="nav" id="nav" aria-label="Sections">
+    <a href="#inbox" data-view="inbox">Inbox<span class="badge" id="nb-inbox"></span></a>
+    <a href="#ideas" data-view="ideas">Ideas<span class="badge" id="nb-ideas"></span></a>
+    <a href="#memory" data-view="memory">Leo’s memory</a>
+    <a href="#emails" data-view="emails">Emails</a>
+  </nav>
+  <button class="iconbtn" id="theme" type="button" aria-label="Toggle dark mode"></button>
+  <div class="presence" id="presence" role="switch" tabindex="0" aria-checked="false" aria-label="Team presence">
+    <span id="ptext">You’re offline</span><span class="track"><span class="knob"></span></span>
+  </div>
+</header>
+
+<main>
+  <!-- Inbox -->
+  <section class="view split" id="view-inbox">
+    <div class="list">
+      <div class="listtools">
+        <label class="search">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+          <input id="search" type="search" placeholder="Search name, church, message…" aria-label="Search conversations">
+        </label>
+        <div class="tabs" id="tabs">
+          <button type="button" data-f="open" class="active">Open<span class="n" data-n="open"></span></button>
+          <button type="button" data-f="escalated">Escalated<span class="n" data-n="escalated"></span></button>
+          <button type="button" data-f="resolved">Resolved<span class="n" data-n="resolved"></span></button>
+          <button type="button" data-f="all">All</button>
+        </div>
+      </div>
+      <div class="rows" id="rows"></div>
+    </div>
+    <div class="thread" id="thread"><div class="empty"><div class="mark">L</div>Select a conversation</div></div>
+  </section>
+
+  <!-- Ideas -->
+  <section class="view page" id="view-ideas" hidden>
+    <div class="viewhead">
+      <div>
+        <h2>Ideas board</h2>
+        <p id="ideas-sub">Feature requests from every Faithmade church. Voters hear from you when an idea moves.</p>
+      </div>
+      <label class="search small">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+        <input id="ideas-q" type="search" placeholder="Search ideas…" aria-label="Search ideas">
+      </label>
+    </div>
+    <div class="kanban" id="kanban"></div>
+  </section>
+
+  <!-- Leo's memory -->
+  <section class="view page" id="view-memory" hidden>
+    <div class="viewhead">
+      <div>
+        <h2>Leo’s memory</h2>
+        <p>Answers the team has taught Leo — by replying to Leo’s emails, coaching in the inbox, or by hand. Leo uses them in every chat.</p>
+      </div>
+      <div class="headtools">
+        <label class="search small">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+          <input id="mem-q" type="search" placeholder="Search memory…" aria-label="Search memory">
+        </label>
+        <button class="btn primary" id="mem-add" type="button">+ Teach Leo</button>
+      </div>
+    </div>
+    <form class="memform card" id="mem-form" hidden>
+      <label>When a church asks…<input name="question" placeholder="How do I change the time on a recurring event?" required maxlength="300"></label>
+      <label>Leo should answer…<textarea name="answer" rows="4" placeholder="The answer, written for any church — no names or account details." required maxlength="4000"></textarea></label>
+      <div class="formrow"><button class="btn primary" type="submit">Save to Leo’s memory</button><button class="btn" type="button" id="mem-cancel">Cancel</button></div>
+    </form>
+    <div class="memlist" id="memlist"></div>
+  </section>
+
+  <!-- Emails -->
+  <section class="view split" id="view-emails" hidden>
+    <div class="list">
+      <div class="listtools">
+        <div class="cfg" id="email-cfg"></div>
+        <div class="tabs" id="etabs">
+          <button type="button" data-f="all" class="active">All</button>
+          <button type="button" data-f="out">Sent</button>
+          <button type="button" data-f="in">Received</button>
+          <button type="button" data-f="problem">Problems<span class="n" id="eprob"></span></button>
+        </div>
+      </div>
+      <div class="rows" id="email-rows"></div>
+    </div>
+    <div class="preview" id="email-preview"><div class="empty"><div class="mark">✉</div>Select an email to preview it exactly as it was sent</div></div>
+  </section>
+</main>
+
+<aside class="drawer" id="drawer" hidden aria-label="Idea details"></aside>
+<div class="scrim" id="scrim" hidden></div>
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script>/*@inline admin.js*/</script>
+</body>
+</html>

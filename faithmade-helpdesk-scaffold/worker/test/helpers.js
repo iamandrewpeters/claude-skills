@@ -1,4 +1,14 @@
 import { createHmac } from 'node:crypto';
+import { createD1 } from './d1.js';
+import worker from '../src/index.js';
+
+// Tests never touch the network: any fetch not routed through withFetch() fails.
+globalThis.fetch = async (url) => {
+  throw new Error(`unexpected network call in a test: ${url}`);
+};
+
+export const TEAM = 'andrew@faithmade.test';
+export const BASE = 'https://helpdesk.test';
 
 // Independent HMAC implementation (node:crypto) — cross-checks the Worker's
 // WebCrypto one in src/auth.js.
@@ -20,134 +30,113 @@ export function testContext(secret, overrides = {}) {
   });
 }
 
-// In-memory stand-in for the D1 binding, shaped around the queries src/db.js runs.
-export class FakeDB {
-  constructor() {
-    this.conversations = new Map();
-    this.messages = [];
-    this.escalations = [];
-    this.online = false;
-    this.nextId = 0;
-  }
-  prepare(sql) {
-    const db = this;
-    const exec = (args) => {
-      if (sql.includes('INSERT INTO conversations')) {
-        if (!db.conversations.has(args[0])) {
-          db.conversations.set(args[0], {
-            id: args[0], site: args[1], church: args[2], user_name: args[3], user_email: args[4],
-            status: 'open', handled_by: 'leo', agent_last_read_id: 0, created_at: 't0', updated_at: 't0',
-          });
-        }
-        return [];
-      }
-      if (sql.includes('INSERT INTO messages')) {
-        const msg = { id: ++db.nextId, conversation_id: args[0], role: args[1], content: args[2], created_at: 't1' };
-        db.messages.push(msg);
-        return [msg];
-      }
-      if (sql.includes('INSERT INTO escalations')) {
-        db.escalations.push({ conversation_id: args[0], reason: args[1], ghl_status: args[2], created_at: 't2' });
-        return [];
-      }
-      if (sql.includes('SET status')) {
-        const c = db.conversations.get(args[0]);
-        if (c) c.status = args[1];
-        return [];
-      }
-      if (sql.includes('SET handled_by')) {
-        const c = db.conversations.get(args[0]);
-        if (c) c.handled_by = args[1];
-        return [];
-      }
-      if (sql.includes('SET agent_last_read_id')) {
-        const c = db.conversations.get(args[0]);
-        if (c) {
-          const ids = db.messages.filter((m) => m.conversation_id === args[0]).map((m) => m.id);
-          c.agent_last_read_id = ids.length ? Math.max(...ids) : 0;
-        }
-        return [];
-      }
-      if (sql.includes('UPDATE presence')) {
-        db.online = !sql.includes('NULL');
-        return [];
-      }
-      if (sql.includes('FROM presence')) {
-        return db.online ? [{ online: 1 }] : [];
-      }
-      if (sql.includes('LEFT JOIN')) {
-        return [...db.conversations.values()].map((c) => {
-          const msgs = db.messages.filter((m) => m.conversation_id === c.id);
-          const last = msgs[msgs.length - 1];
-          return {
-            ...c,
-            msg_count: msgs.length,
-            last_id: last ? last.id : 0,
-            last_at: last ? last.created_at : c.created_at,
-            last_snippet: last ? last.content : '',
-          };
-        });
-      }
-      if (sql.includes('SELECT * FROM conversations WHERE id')) {
-        const c = db.conversations.get(args[0]);
-        return c ? [{ ...c }] : [];
-      }
-      if (sql.includes('FROM escalations')) {
-        return db.escalations.filter((e) => e.conversation_id === args[0]);
-      }
-      if (sql.includes('AND id >')) {
-        return db.messages.filter((m) => m.conversation_id === args[0] && m.id > args[1]);
-      }
-      // history: newest-first (DESC LIMIT n); caller reverses
-      if (sql.includes('DESC')) {
-        const rows = db.messages
-          .filter((m) => m.conversation_id === args[0])
-          .map((m) => ({ role: m.role, content: m.content }));
-        return rows.slice(-args[1]).reverse();
-      }
-      throw new Error('FakeDB: unhandled SQL: ' + sql.slice(0, 80));
-    };
-    const stmt = (args) => ({
-      async run() { exec(args); return { success: true }; },
-      async all() { return { results: exec(args) }; },
-    });
-    // Mirror D1: statements are usable with or without .bind()
-    return { bind: (...args) => stmt(args), ...stmt([]) };
-  }
-}
-
 export function testEnv(overrides = {}) {
   return {
-    DB: new FakeDB(),
+    DB: createD1(),
     WIDGET_SIGNING_SECRET: 'test-secret',
+    TOKEN_SECRET: 'test-token-secret',
     GHL_WEBHOOK_URL: 'https://ghl.example/hooks/abc',
     ADMIN_KEY: 'test-admin',
     MOCK_CLAUDE: '1',
     CLAUDE_MODEL: 'claude-opus-5',
+    PUBLIC_URL: BASE,
+    REPLY_DOMAIN: 'reply.faithmade.app',
+    TEAM_EMAILS: TEAM,
     ...overrides,
   };
 }
 
+export const run = (env, request) => worker.fetch(request, env, { waitUntil() {} });
+
 export function postJson(path, body) {
-  return new Request(`https://helpdesk.test${path}`, {
+  return new Request(`${BASE}${path}`, {
     method: 'POST',
     headers: { 'content-type': 'application/json', origin: 'https://gracechurch.org' },
     body: JSON.stringify(body),
   });
 }
 
+export function widget(env, path, body = {}, contextOverrides = {}) {
+  return run(env, postJson(path, { context: testContext(env.WIDGET_SIGNING_SECRET, contextOverrides), conversation_id: 'conv-test-1', ...body }));
+}
+
+export async function chat(env, message, extra = {}) {
+  const res = await widget(env, '/chat', { message, ...extra });
+  return res.json();
+}
+
 export function adminPost(path, body) {
-  return new Request(`https://helpdesk.test${path}?key=test-admin`, {
+  return new Request(`${BASE}${path}`, {
     method: 'POST',
-    headers: { 'content-type': 'application/json' },
+    headers: { 'content-type': 'application/json', 'x-admin-key': 'test-admin' },
     body: JSON.stringify(body),
   });
 }
 
-export function pollRequest(env, conversationId, afterId = 0) {
+export function adminGet(path) {
+  return new Request(`${BASE}${path}`, { headers: { 'x-admin-key': 'test-admin' } });
+}
+
+export function pollRequest(env, conversationId, afterId = 0, extra = {}) {
   return postJson('/messages', {
     context: testContext(env.WIDGET_SIGNING_SECRET),
     conversation_id: conversationId,
     after_id: afterId,
+    ...extra,
   });
 }
+
+// Captures outbound fetches (GHL webhook, Resend) for the duration of fn.
+export async function withFetch(handler, fn) {
+  const calls = [];
+  const real = globalThis.fetch;
+  globalThis.fetch = async (url, init) => {
+    calls.push({ url: String(url), body: init && init.body ? JSON.parse(init.body) : null });
+    return handler(String(url), init);
+  };
+  try {
+    await fn(calls);
+  } finally {
+    globalThis.fetch = real;
+  }
+  return calls;
+}
+
+export const okFetch = () => new Response(JSON.stringify({ id: 'msg_1' }), { status: 200 });
+
+// A raw RFC 822 message, as Email Routing hands it to the Worker.
+export function rawEmail({ from, to, subject = 'Re: Leo needs you', text, headers = {} }) {
+  const extra = Object.entries(headers).map(([k, v]) => `${k}: ${v}\r\n`).join('');
+  return (
+    `From: ${from}\r\nTo: ${to}\r\nSubject: ${subject}\r\nMessage-ID: <${Math.random().toString(36).slice(2)}@mail.test>\r\n` +
+    `Date: Sat, 03 Oct 2026 09:14:00 -0500\r\nMIME-Version: 1.0\r\nContent-Type: text/plain; charset=utf-8\r\n${extra}\r\n${text}`
+  );
+}
+
+// Minimal ForwardableEmailMessage.
+export function emailMessage({ from, to, subject, text, headers = {} }) {
+  const raw = rawEmail({ from, to, subject, text, headers });
+  const message = {
+    from,
+    to,
+    raw: new Response(raw).body,
+    rawSize: raw.length,
+    headers: new Headers(headers),
+    rejected: null,
+    setReject(reason) {
+      message.rejected = reason;
+    },
+  };
+  return message;
+}
+
+// Runs the email() handler to completion (waitUntil included).
+export async function deliverEmail(env, msg) {
+  const pending = [];
+  await worker.email(msg, env, { waitUntil: (p) => pending.push(p) });
+  await Promise.all(pending);
+  return msg;
+}
+
+export const outbound = (env, kind) =>
+  env.DB.rows("SELECT * FROM email_log WHERE direction = 'out'" + (kind ? ' AND kind = ?' : '') + ' ORDER BY id', ...(kind ? [kind] : []));

@@ -1,3 +1,6 @@
+-- v1: conversations, messages, escalations, presence. Idempotent (IF NOT EXISTS),
+-- so it is safe on the production DB, which had this schema applied by hand.
+
 CREATE TABLE IF NOT EXISTS conversations (
   id                 TEXT PRIMARY KEY,
   site               TEXT NOT NULL,
@@ -14,7 +17,7 @@ CREATE TABLE IF NOT EXISTS conversations (
 CREATE TABLE IF NOT EXISTS messages (
   id              INTEGER PRIMARY KEY AUTOINCREMENT,
   conversation_id TEXT NOT NULL REFERENCES conversations(id),
-  role            TEXT NOT NULL, -- user | assistant (Leo) | agent (human team)
+  role            TEXT NOT NULL, -- user | assistant (Leo) | agent (human team); 0002 adds coach | note
   content         TEXT NOT NULL,
   created_at      TEXT NOT NULL DEFAULT (datetime('now'))
 );
