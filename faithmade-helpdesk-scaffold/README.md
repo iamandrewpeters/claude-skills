@@ -56,7 +56,9 @@ Then sign in at `https://helpdesk.faithmade.app/admin`.
 ```bash
 cd worker
 npm install
-npm test                         # 71 tests — runs the Worker against real SQLite built from migrations/
+npm test                         # 77 tests — the Worker against real SQLite built from migrations/
+npm run e2e                      # 12 end-to-end flows: wrangler dev + a real browser + simulated inbound email
+                                 #   (Chromium from `npx playwright install chromium`, or set CHROME_PATH)
 cp .dev.vars.example .dev.vars   # MOCK_CLAUDE=1 gives canned Leo replies
 npm run db:migrate:local
 npm run dev                      # http://127.0.0.1:8787  (inbox: /admin, key from .dev.vars)
@@ -65,7 +67,7 @@ npm run dev                      # http://127.0.0.1:8787  (inbox: /admin, key fr
 Serve the repo root (`python3 -m http.server 8899`) and open `/demo/index.html` for a fake wp-admin with the widget. Simulate an email reply with
 `curl -X POST "http://127.0.0.1:8787/cdn-cgi/local/email?from=<team email>&to=<leo+… address from the Emails tab>" --data-binary @reply.eml`.
 
-`MOCK_CLAUDE=1` is for dev and tests only — never set it in production. Leo runs on `claude-opus-5` with Anthropic's server-side refusal fallback; override with `CLAUDE_MODEL`.
+`MOCK_CLAUDE=1` is for dev and tests only — never set it in production. Leo runs on `claude-opus-5` with Anthropic's server-side refusal fallback; override with `CLAUDE_MODEL`. Set `ANTHROPIC_BASE_URL` to route Leo through Cloudflare AI Gateway (the e2e suite uses it to point the real SDK at a local stand-in for the API).
 
 ## Status
 

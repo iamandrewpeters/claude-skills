@@ -8,6 +8,20 @@ export const IDEA_MARKER = '[[IDEA]]';
 const MODEL = (env) => env.CLAUDE_MODEL || 'claude-opus-5';
 const FALLBACK = { betas: ['server-side-fallback-2026-07-01'], fallbacks: 'default' };
 
+// Credentials and endpoint are always explicit: the SDK would otherwise fall
+// back to ANTHROPIC_* in process.env (Node, or Workers with nodejs_compat).
+// ANTHROPIC_BASE_URL can route Leo through Cloudflare AI Gateway — or, in the
+// end-to-end tests, to a local stand-in for the API.
+function anthropic(env) {
+  if (!env.ANTHROPIC_API_KEY) throw new Error('ANTHROPIC_API_KEY is not set');
+  return new Anthropic({
+    apiKey: env.ANTHROPIC_API_KEY,
+    authToken: null,
+    baseURL: env.ANTHROPIC_BASE_URL || 'https://api.anthropic.com',
+    timeout: 120 * 1000,
+  });
+}
+
 const PERSONA = `You are Leo, the Faithmade AI — the same friendly guide who helps churches build their sites. You're now helping a church staff member with a support question inside their site's wp-admin. Faithmade sites run on WordPress with Beaver Builder, built by The Reach Company.
 
 Voice: warm, plainspoken, encouraging — you talk to church staff, not developers. Short sentences. No jargon unless they use it first.
@@ -78,7 +92,7 @@ export async function askLeo(env, context, history, knowledge = {}) {
     return { reply, escalate, idea };
   }
 
-  const client = new Anthropic({ apiKey: env.ANTHROPIC_API_KEY });
+  const client = anthropic(env);
 
   // Persona first and cached; the per-question knowledge and per-site context
   // after it, so they don't invalidate the cached prefix. Medium effort keeps
@@ -171,7 +185,7 @@ export async function coachLeo(env, conv, history, guidance) {
     };
   }
 
-  const client = new Anthropic({ apiKey: env.ANTHROPIC_API_KEY });
+  const client = anthropic(env);
   const response = await client.beta.messages.create({
     model: MODEL(env),
     max_tokens: 4096,

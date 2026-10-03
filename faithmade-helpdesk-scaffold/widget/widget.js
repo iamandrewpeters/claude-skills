@@ -134,9 +134,9 @@
     '      <div class="rhd-compose">' +
     '        <h3 class="rhd-compose-title">Share an idea</h3>' +
     '        <p class="rhd-compose-sub">What should Faithmade build next? Other churches can vote, and we’ll email you when it moves.</p>' +
-    '        <input class="rhd-field rhd-idea-title" maxlength="120" aria-label="Idea title" placeholder="Short title — e.g. Spanish sermon notes" required>' +
+    '        <input class="rhd-field rhd-new-title" maxlength="120" aria-label="Idea title" placeholder="Short title — e.g. Spanish sermon notes" required>' +
     '        <div class="rhd-similar" hidden></div>' +
-    '        <textarea class="rhd-field rhd-idea-body" rows="4" maxlength="4000" aria-label="Details" placeholder="What would it help your church do? (optional)"></textarea>' +
+    '        <textarea class="rhd-field rhd-new-body" rows="4" maxlength="4000" aria-label="Details" placeholder="What would it help your church do? (optional)"></textarea>' +
     '        <button type="submit" class="rhd-primary">Post idea</button>' +
     '      </div>' +
     '    </form>' +
@@ -508,8 +508,8 @@
   var homeEl = $('.rhd-ideas-home');
   var detailEl = $('.rhd-idea-detail');
   var newEl = $('.rhd-idea-new');
-  var titleInput = $('.rhd-idea-title');
-  var bodyInput = $('.rhd-idea-body');
+  var titleInput = $('.rhd-new-title');
+  var bodyInput = $('.rhd-new-body');
   var similarEl = $('.rhd-similar');
   var sort = 'top';
   var ideas = [];

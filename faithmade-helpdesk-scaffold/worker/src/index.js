@@ -176,8 +176,11 @@ export default {
   },
 
   // Cloudflare Email Routing → replies to Leo's emails (docs/EMAIL-SETUP.md).
-  async email(message, env, ctx) {
+  // The work (a Claude call for coaching) runs inside the handler rather than
+  // in waitUntil, which is capped at ~30s after the handler returns. Errors
+  // surface as a failed delivery instead of being swallowed in the background.
+  async email(message, env) {
     const result = await receiveEmail(message, env);
-    if (result.process) ctx.waitUntil(result.process().catch((err) => console.error('inbound email failed', err)));
+    if (result.process) await result.process();
   },
 };

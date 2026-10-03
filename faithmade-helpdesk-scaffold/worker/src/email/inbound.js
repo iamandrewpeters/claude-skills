@@ -1,12 +1,13 @@
-// Inbound email, via Cloudflare Email Routing (catch-all on REPLY_DOMAIN → this
-// Worker's email() handler). Two kinds of address, both signed (tokens.js):
+// Inbound email, via Cloudflare Email Routing (leo@ and chat@ on REPLY_DOMAIN,
+// plus-addressed, → this Worker's email() handler). Two kinds of address,
+// both signed (tokens.js):
 //
 //   leo+<conv>.<sig>@   the team replying to one of Leo's emails → coach Leo
 //   chat+<conv>.<sig>@  the church replying to an answer we emailed → their next message
 //
 // The signed address proves the sender received our email; the From check
-// proves they're who that email went to. Checks run up front so a bad message
-// is bounced during delivery; the slow part (Claude) runs after via process().
+// proves they're who that email went to. Checks run first, so a bad message
+// is bounced cheaply; the slow part (Claude) is returned as process().
 
 import PostalMime from 'postal-mime';
 import * as db from '../db.js';
@@ -20,7 +21,7 @@ const MAX_INBOUND_PER_10_MIN = 8; // backstop against mail loops
 /**
  * message: Cloudflare ForwardableEmailMessage ({ from, to, headers, raw, setReject }).
  * Returns { status, reason?, process? } — process() does the work; the email()
- * handler hands it to ctx.waitUntil so delivery isn't held open.
+ * handler awaits it.
  */
 export async function receiveEmail(message, env) {
   const to = String(message.to || '').trim().toLowerCase();

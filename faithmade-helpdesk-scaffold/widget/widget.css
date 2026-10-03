@@ -482,7 +482,7 @@
 }
 #rhd-root .rhd-field:focus { border-color: var(--leo-deep); box-shadow: 0 0 0 3px rgba(105, 175, 149, 0.18); }
 #rhd-root .rhd-comment-form .rhd-field { flex: 1; }
-#rhd-root .rhd-idea-title.rhd-field { font-weight: 700; }
+#rhd-root .rhd-new-title { font-weight: 700; }
 #rhd-root .rhd-primary {
   border: none; border-radius: 11px; padding: 11px 16px; cursor: pointer; font-family: inherit; font-size: 13.5px; font-weight: 700; color: #fff;
   background: linear-gradient(135deg, var(--leo-deep), var(--leo-dark)); box-shadow: 0 3px 10px rgba(53, 96, 79, 0.25);

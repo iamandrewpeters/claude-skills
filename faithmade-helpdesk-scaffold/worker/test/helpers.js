@@ -91,7 +91,11 @@ export async function withFetch(handler, fn) {
   const calls = [];
   const real = globalThis.fetch;
   globalThis.fetch = async (url, init) => {
-    calls.push({ url: String(url), body: init && init.body ? JSON.parse(init.body) : null });
+    calls.push({
+      url: String(url),
+      headers: new Headers(init && init.headers),
+      body: init && init.body ? JSON.parse(init.body) : null,
+    });
     return handler(String(url), init);
   };
   try {
@@ -130,11 +134,9 @@ export function emailMessage({ from, to, subject, text, headers = {} }) {
   return message;
 }
 
-// Runs the email() handler to completion (waitUntil included).
+// Runs the email() handler to completion.
 export async function deliverEmail(env, msg) {
-  const pending = [];
-  await worker.email(msg, env, { waitUntil: (p) => pending.push(p) });
-  await Promise.all(pending);
+  await worker.email(msg, env, { waitUntil() {} });
   return msg;
 }
 
