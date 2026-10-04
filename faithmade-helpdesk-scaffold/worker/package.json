@@ -1,0 +1,23 @@
+{
+  "name": "faithmade-helpdesk-worker",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node ../tools/build-kb.js && node ../tools/build-ui.js",
+    "dev": "npm run build && wrangler dev",
+    "deploy": "npm run build && wrangler deploy",
+    "test": "npm run build && node --disable-warning=ExperimentalWarning --test test/*.test.js",
+    "db:migrate": "wrangler d1 migrations apply faithmade-helpdesk --remote",
+    "db:migrate:local": "wrangler d1 migrations apply faithmade-helpdesk --local",
+    "e2e": "npm run build && node --test --test-timeout=300000 e2e/flows.test.js"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.110.0",
+    "postal-mime": "^2.7.6"
+  },
+  "devDependencies": {
+    "playwright-core": "1.56",
+    "wrangler": "^4.0.0"
+  }
+}
